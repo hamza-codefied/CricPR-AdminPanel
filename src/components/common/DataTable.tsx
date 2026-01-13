@@ -82,7 +82,7 @@ export function DataTable<T extends Record<string, any>>({
             <Select
               key={String(filter.key)}
               value={filterValues[filter.key as string] || ''}
-              onChange={(value) =>
+              onChange={(value: string) =>
                 setFilterValues({ ...filterValues, [filter.key]: value })
               }
               className="border-2 focus:border-primary"

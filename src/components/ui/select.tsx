@@ -7,11 +7,14 @@ export interface SelectOption {
   label: string
 }
 
+type ChangeHandler = (event: React.ChangeEvent<HTMLSelectElement>) => void
+type StringHandler = (value: string) => void
+
 export interface SelectProps
   extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange' | 'children'> {
   options?: SelectOption[]
   children?: React.ReactNode
-  onChange?: (value: string) => void
+  onChange?: ChangeHandler | StringHandler
   placeholder?: string
 }
 
@@ -33,13 +36,25 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     const selectOptions: SelectOption[] = React.useMemo(() => {
       if (options) return options
       if (children) {
-        const childArray = React.Children.toArray(children) as React.ReactElement[]
+        const childArray = React.Children.toArray(children)
         return childArray
-          .filter((child) => child.type === 'option')
-          .map((child) => ({
-            value: child.props.value || '',
-            label: child.props.children || child.props.value || '',
-          }))
+          .filter((child): child is React.ReactElement<{ value?: string; children?: React.ReactNode }> => 
+            React.isValidElement(child) && child.type === 'option'
+          )
+          .map((child) => {
+            const props = child.props
+            const value = (props?.value as string | undefined) || ''
+            const childrenValue = props?.children
+            const label = typeof childrenValue === 'string' 
+              ? childrenValue 
+              : (typeof childrenValue === 'number' 
+                ? String(childrenValue) 
+                : (props?.value as string | undefined) || '')
+            return {
+              value,
+              label,
+            }
+          })
       }
       return []
     }, [options, children])
@@ -65,9 +80,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         selectElementRef.current.dispatchEvent(event)
       }
       
-      if (onChange) {
-        onChange(optionValue)
-      }
+      // onChange is handled by the hidden select element's onChange handler
+      // which will trigger React Hook Form's register handler automatically
     }
 
     // Close on outside click
@@ -125,7 +139,10 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           value={selectedValue}
           onChange={(e) => {
             setSelectedValue(e.target.value)
-            if (onChange) onChange(e.target.value)
+            if (onChange) {
+              // Call with event (works for React Hook Form)
+              (onChange as ChangeHandler)(e)
+            }
           }}
           className="sr-only"
           {...props}

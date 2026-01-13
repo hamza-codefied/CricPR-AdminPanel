@@ -16,8 +16,8 @@ export function PlayersList() {
   const [players, setPlayers] = useState(mockPlayers)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null)
-  const [sortBy, setSortBy] = useState('')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const sortBy = ''
+  const sortOrder: 'asc' | 'desc' = 'asc'
 
   const handleDelete = (player: any) => {
     setSelectedPlayer(player)
