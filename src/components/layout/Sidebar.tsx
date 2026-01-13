@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -9,10 +9,12 @@ import {
   Bell,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { Button } from "../ui/button";
 import logo from "../../assets/CircPr-logo.png";
+import { useAuthStore } from "../../store/useAuthStore";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -32,11 +34,21 @@ const menuItems = [
 
 export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+    if (isMobile) {
+      onToggle();
+    }
+  };
 
   const sidebarContent = (
     <div className="flex h-full flex-col border-r border-borderShadcn/50 bg-card shadow-lg backdrop-blur-sm">
       {/* Logo Section */}
-      <div className="flex h-20 items-center justify-between border-b border-borderShadcn/50 px-6 bg-gradient-to-r from-primary/5 to-transparent">
+      <div className="flex h-16 sm:h-20 items-center justify-between border-b border-borderShadcn/50 px-4 sm:px-6 bg-gradient-to-r from-primary/5 to-transparent">
         <Link
           to="/dashboard"
           className="flex items-center gap-3 group min-w-0 flex-1"
@@ -45,7 +57,7 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
             <img
               src={logo}
               alt="CricPR Logo"
-              className="h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
             />
           </div>
         </Link>
@@ -62,7 +74,7 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-2 p-4 overflow-y-auto">
+      <nav className="flex-1 space-y-1.5 sm:space-y-2 p-3 sm:p-4 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -75,7 +87,7 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
               to={item.path}
               onClick={isMobile ? onToggle : undefined}
               className={cn(
-                "group flex items-center gap-4 rounded-xl px-5 py-3.5 text-base font-semibold transition-all duration-200 relative overflow-hidden min-w-0",
+                "group flex items-center gap-3 sm:gap-4 rounded-xl px-4 sm:px-5 py-2.5 sm:py-3.5 text-sm sm:text-base font-semibold transition-all duration-200 relative overflow-hidden min-w-0",
                 isActive
                   ? "bg-primary-button-gradient text-white shadow-lg shadow-primary/30 scale-[1.02]"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-md hover:scale-[1.01]"
@@ -86,7 +98,7 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
               )}
               <Icon
                 className={cn(
-                  "h-5 w-5 relative z-10 transition-transform duration-200 flex-shrink-0",
+                  "h-4 w-4 sm:h-5 sm:w-5 relative z-10 transition-transform duration-200 flex-shrink-0",
                   isActive
                     ? "text-white"
                     : "text-muted-foreground group-hover:text-accent-foreground group-hover:scale-110"
@@ -103,14 +115,16 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer Section */}
-      <div className="border-t border-borderShadcn/50 p-4 bg-muted/30">
-        <div className="rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 p-3 text-center">
-          <p className="text-xs font-semibold text-foreground">CricPR</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            Admin Panel v1.0
-          </p>
-        </div>
+      {/* Logout Section */}
+      <div className="border-t border-borderShadcn/50 p-3 sm:p-4">
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          className="w-full flex items-center gap-2 sm:gap-3 justify-center py-2 sm:py-3 text-sm sm:text-base font-semibold hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200"
+        >
+          <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span>Logout</span>
+        </Button>
       </div>
     </div>
   );
