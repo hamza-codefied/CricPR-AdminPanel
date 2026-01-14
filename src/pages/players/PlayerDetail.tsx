@@ -6,15 +6,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Badge } from '../../components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar'
-import { mockPlayers, mockMatches } from '../../services/mockData'
+import { usePlayer } from '../../hooks/usePlayer'
+import { format } from 'date-fns'
 
 export function PlayerDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const player = mockPlayers.find((p) => p.id === id)
-  const profileImage = player ? `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0E795D&color=fff&size=256` : ''
+  const { playerData, isLoading, isError } = usePlayer(id)
+  
+  const profileImage = playerData ? `https://ui-avatars.com/api/?name=${encodeURIComponent(playerData.name)}&background=0E795D&color=fff&size=256` : ''
 
-  if (!player) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-muted-foreground">Loading player details...</p>
+      </div>
+    )
+  }
+
+  if (isError || !playerData) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-muted-foreground">Player not found</p>
@@ -24,6 +34,8 @@ export function PlayerDetail() {
       </div>
     )
   }
+
+  const player = playerData
 
   return (
     <div className="space-y-6">
@@ -57,11 +69,13 @@ export function PlayerDetail() {
                 {player.name}
               </h1>
               <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="outline" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
-                  {player.team}
-                </Badge>
+                {player.teams && player.teams.length > 0 && (
+                  <Badge variant="outline" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                    {player.teams[0]}
+                  </Badge>
+                )}
                 <Badge variant="outline" className="bg-white/20 text-white border-white/30 backdrop-blur-sm capitalize">
-                  {player.role}
+                  {player.playingRole}
                 </Badge>
                 {player.city && (
                   <div className="flex items-center gap-1.5 text-white/90">
@@ -88,7 +102,7 @@ export function PlayerDetail() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-primary">{player.matchesPlayed}</div>
+            <div className="text-3xl font-bold text-primary">{player.matches}</div>
             <p className="text-xs text-muted-foreground mt-1">Career matches</p>
           </CardContent>
         </Card>
@@ -133,7 +147,7 @@ export function PlayerDetail() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{player.strikeRate}</div>
+            <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{player.strikeRate.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground mt-1">Batting strike rate</p>
           </CardContent>
         </Card>
@@ -157,11 +171,11 @@ export function PlayerDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Role</p>
-                    <p className="font-semibold capitalize">{player.role}</p>
+                    <p className="font-semibold capitalize">{player.playingRole}</p>
                   </div>
                 </div>
                 <Badge variant="outline" className="capitalize">
-                  {player.role}
+                  {player.playingRole}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
@@ -170,13 +184,10 @@ export function PlayerDetail() {
                     <Activity className="h-4 w-4 text-green-500" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Status</p>
-                    <p className="font-semibold capitalize">{player.status}</p>
+                    <p className="text-xs text-muted-foreground">Teams</p>
+                    <p className="font-semibold">{player.teams?.join(', ') || 'N/A'}</p>
                   </div>
                 </div>
-                <Badge variant={player.status === 'active' ? 'success' : 'secondary'}>
-                  {player.status}
-                </Badge>
               </div>
               {player.city && (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
@@ -217,18 +228,17 @@ export function PlayerDetail() {
                   </div>
                 </div>
               )}
-              {player.isWicketKeeper && (
+              {player.country && (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-cyan-500/10">
-                      <Award className="h-4 w-4 text-cyan-500" />
+                      <MapPin className="h-4 w-4 text-cyan-500" />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Wicket Keeper</p>
-                      <p className="font-semibold">Yes</p>
+                      <p className="text-xs text-muted-foreground">Country</p>
+                      <p className="font-semibold">{player.country}</p>
                     </div>
                   </div>
-                  <Badge variant="success">WK</Badge>
                 </div>
               )}
             </div>
@@ -314,7 +324,7 @@ export function PlayerDetail() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <span className="text-lg font-bold text-primary">{player.matchesPlayed}</span>
+                      <span className="text-lg font-bold text-primary">{player.matches}</span>
                     </TableCell>
                   </TableRow>
                   <TableRow className="hover:bg-primary/5 transition-colors">
@@ -350,7 +360,20 @@ export function PlayerDetail() {
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
-                        {player.strikeRate}
+                        {player.strikeRate.toFixed(2)}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow className="hover:bg-primary/5 transition-colors">
+                    <TableCell className="font-semibold">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-blue-500" />
+                        Average
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                        {player.average.toFixed(2)}
                       </span>
                     </TableCell>
                   </TableRow>
@@ -358,12 +381,12 @@ export function PlayerDetail() {
                     <TableRow className="hover:bg-primary/5 transition-colors">
                       <TableCell className="font-semibold">
                         <div className="flex items-center gap-2">
-                          <Activity className="h-4 w-4 text-blue-500" />
+                          <Activity className="h-4 w-4 text-purple-500" />
                           Economy
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                        <span className="text-lg font-bold text-purple-600 dark:text-purple-400">
                           {player.economy.toFixed(2)}
                         </span>
                       </TableCell>
@@ -394,29 +417,39 @@ export function PlayerDetail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockMatches.slice(0, 5).map((match) => (
-                      <TableRow key={match.id} className="hover:bg-primary/5 transition-colors">
-                        <TableCell className="font-medium">
-                          {match.teamA} vs {match.teamB}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {match.date}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-semibold text-green-600 dark:text-green-400">
-                            {Math.floor(Math.random() * 100)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-semibold text-red-600 dark:text-red-400">
-                            {Math.floor(Math.random() * 5)}
-                          </span>
+                    {player.matchesArray && player.matchesArray.length > 0 ? (
+                      player.matchesArray.map((match, index) => (
+                        <TableRow key={index} className="hover:bg-primary/5 transition-colors">
+                          <TableCell className="font-medium">
+                            {match.matchTitle}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              {match.startDate && !isNaN(new Date(match.startDate).getTime()) 
+                                ? format(new Date(match.startDate), 'MMM dd, yyyy')
+                                : 'N/A'}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-semibold text-green-600 dark:text-green-400">
+                              {match.runs}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-semibold text-red-600 dark:text-red-400">
+                              {match.wickets}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          No matches found
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -435,7 +468,7 @@ export function PlayerDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-4xl font-bold text-green-600 dark:text-green-400">156*</p>
+                <p className="text-4xl font-bold text-green-600 dark:text-green-400">{player.highestScore}*</p>
                 <p className="text-xs text-muted-foreground mt-2">Best batting performance</p>
               </CardContent>
             </Card>
@@ -449,7 +482,7 @@ export function PlayerDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-4xl font-bold text-red-600 dark:text-red-400">5/28</p>
+                <p className="text-4xl font-bold text-red-600 dark:text-red-400">{player.bestBowling}</p>
                 <p className="text-xs text-muted-foreground mt-2">Best bowling figures</p>
               </CardContent>
             </Card>
@@ -459,12 +492,12 @@ export function PlayerDetail() {
                   <div className="p-2 rounded-lg bg-yellow-500/20">
                     <Award className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                   </div>
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Most Runs</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Average</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-4xl font-bold text-yellow-600 dark:text-yellow-400">156</p>
-                <p className="text-xs text-muted-foreground mt-2">Most runs in a match</p>
+                <p className="text-4xl font-bold text-yellow-600 dark:text-yellow-400">{player.average.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground mt-2">Batting average</p>
               </CardContent>
             </Card>
           </div>
