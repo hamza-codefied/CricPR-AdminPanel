@@ -6,15 +6,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Badge } from '../../components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar'
-import { mockTeams, mockPlayers, mockMatches } from '../../services/mockData'
+import { useTeam } from '../../hooks/useTeam'
+import { format } from 'date-fns'
 
 export function TeamDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const team = mockTeams.find((t) => t.id === id)
-  const teamPlayers = mockPlayers.filter((p) => p.team === team?.name)
+  const { teamData, isLoading, isError } = useTeam(id)
 
-  if (!team) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-muted-foreground">Loading team details...</p>
+      </div>
+    )
+  }
+
+  if (isError || !teamData) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-muted-foreground">Team not found</p>
@@ -25,7 +33,9 @@ export function TeamDetail() {
     )
   }
 
-  const teamLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(team.name)}&background=0E795D&color=fff&size=256`
+  const team = teamData
+  const fallbackLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(team.teamName)}&background=0E795D&color=fff&size=256`
+  const teamLogo = team.teamLogo || fallbackLogo
 
   return (
     <div className="space-y-6">
@@ -45,9 +55,9 @@ export function TeamDetail() {
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-6">
             <Avatar className="h-32 w-32 border-4 border-white/30 shadow-xl ring-4 ring-white/20">
-              <AvatarImage src={teamLogo} alt={team.name} />
+              <AvatarImage src={teamLogo} alt={team.teamName} />
               <AvatarFallback className="bg-white/20 text-white text-3xl backdrop-blur-sm">
-                {team.name
+                {team.teamName
                   .split(' ')
                   .map((n) => n[0])
                   .join('')
@@ -56,22 +66,22 @@ export function TeamDetail() {
             </Avatar>
             <div className="space-y-2">
               <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-lg">
-                {team.name}
+                {team.teamName}
               </h1>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-1.5 text-white/90">
                   <Trophy className="h-4 w-4" />
-                  <span className="text-sm font-medium">Captain: {team.captain}</span>
+                  <span className="text-sm font-medium">Captain: {team.teamCaptain}</span>
                 </div>
-                {team.city && (
+                {team.teamCity && (
                   <div className="flex items-center gap-1.5 text-white/90">
                     <MapPin className="h-4 w-4" />
-                    <span className="text-sm font-medium">{team.city}</span>
+                    <span className="text-sm font-medium">{team.teamCity}</span>
                   </div>
                 )}
-                {team.country && (
+                {team.teamCountry && (
                   <Badge variant="outline" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
-                    {team.country}
+                    {team.teamCountry}
                   </Badge>
                 )}
               </div>
@@ -162,12 +172,12 @@ export function TeamDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Captain</p>
-                    <p className="font-semibold">{team.captain}</p>
+                    <p className="font-semibold">{team.teamCaptain}</p>
                   </div>
                 </div>
                 <Badge variant="outline">Captain</Badge>
               </div>
-              {team.city && (
+              {team.teamCity && (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-blue-500/10">
@@ -175,12 +185,12 @@ export function TeamDetail() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">City</p>
-                      <p className="font-semibold">{team.city}</p>
+                      <p className="font-semibold">{team.teamCity}</p>
                     </div>
                   </div>
                 </div>
               )}
-              {team.country && (
+              {team.teamCountry && (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-purple-500/10">
@@ -188,7 +198,7 @@ export function TeamDetail() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Country</p>
-                      <p className="font-semibold">{team.country}</p>
+                      <p className="font-semibold">{team.teamCountry}</p>
                     </div>
                   </div>
                 </div>
@@ -200,7 +210,7 @@ export function TeamDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Total Players</p>
-                    <p className="font-semibold">{teamPlayers.length}</p>
+                    <p className="font-semibold">{team.totalPlayers}</p>
                   </div>
                 </div>
               </div>
@@ -221,7 +231,7 @@ export function TeamDetail() {
                 <div>
                   <p className="text-xs text-muted-foreground">Win Rate</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {((team.wins / team.matchesPlayed) * 100).toFixed(1)}%
+                    {team.winRate.toFixed(1)}%
                   </p>
                 </div>
                 <Trophy className="h-8 w-8 text-green-500/30" />
@@ -275,17 +285,18 @@ export function TeamDetail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockMatches
-                      .filter((m) => m.teamA === team.name || m.teamB === team.name)
-                      .map((match) => (
-                        <TableRow key={match.id} className="hover:bg-primary/5 transition-colors">
+                    {team.matches && team.matches.length > 0 ? (
+                      team.matches.map((match, index) => (
+                        <TableRow key={index} className="hover:bg-primary/5 transition-colors">
                           <TableCell className="font-medium">
-                            {match.teamA} vs {match.teamB}
+                            {match.title}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Calendar className="h-3 w-3 text-muted-foreground" />
-                              {match.date}
+                              {match.date && !isNaN(new Date(match.date).getTime()) 
+                                ? format(new Date(match.date), 'MMM dd, yyyy')
+                                : 'N/A'}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -301,9 +312,16 @@ export function TeamDetail() {
                               {match.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-medium">{match.result}</TableCell>
+                          <TableCell className="font-medium">{match.result || 'N/A'}</TableCell>
                         </TableRow>
-                      ))}
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          No matches found
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -331,50 +349,59 @@ export function TeamDetail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {teamPlayers.map((player) => {
-                      const playerImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0E795D&color=fff&size=128`
-                      return (
-                        <TableRow 
-                          key={player.id} 
-                          className="hover:bg-primary/5 transition-colors cursor-pointer"
-                          onClick={() => navigate(`/players/${player.id}`)}
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-9 w-9">
-                                <AvatarImage src={playerImage} alt={player.name} />
-                                <AvatarFallback className="bg-primary text-white text-xs">
-                                  {player.name
-                                    .split(' ')
-                                    .map((n) => n[0])
-                                    .join('')
-                                    .toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="font-medium">{player.name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {player.role}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-semibold">{player.matchesPlayed}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-semibold text-green-600 dark:text-green-400">
-                              {player.runs.toLocaleString()}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-semibold text-red-600 dark:text-red-400">
-                              {player.wickets}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
+                    {team.players && team.players.length > 0 ? (
+                      team.players.map((player) => {
+                        const fallbackPlayerImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=0E795D&color=fff&size=128`
+                        const playerImage = player.playerProfilePic || fallbackPlayerImage
+                        return (
+                          <TableRow 
+                            key={player.playerId} 
+                            className="hover:bg-primary/5 transition-colors cursor-pointer"
+                            onClick={() => navigate(`/players/${player.playerId}`)}
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-9 w-9">
+                                  <AvatarImage src={playerImage} alt={player.playerName} />
+                                  <AvatarFallback className="bg-primary text-white text-xs">
+                                    {player.playerName
+                                      .split(' ')
+                                      .map((n) => n[0])
+                                      .join('')
+                                      .toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium">{player.playerName}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="capitalize">
+                                {player.playerRole}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="font-semibold">{player.matches}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="font-semibold text-green-600 dark:text-green-400">
+                                {player.runs.toLocaleString()}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="font-semibold text-red-600 dark:text-red-400">
+                                {player.wickets}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                          No players found
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -393,20 +420,23 @@ export function TeamDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-4xl font-bold text-green-600 dark:text-green-400">156*</p>
+                <p className="text-4xl font-bold text-green-600 dark:text-green-400">{team.highestScore}*</p>
                 <p className="text-sm text-muted-foreground mt-2">Highest Individual Score</p>
-                {teamPlayers[0] && (
+                {team.players && team.players.length > 0 && (
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-borderShadcn/30">
                     <Avatar className="h-6 w-6">
+                      {team.players[0].playerProfilePic ? (
+                        <AvatarImage src={team.players[0].playerProfilePic} alt={team.players[0].playerName} />
+                      ) : null}
                       <AvatarFallback className="bg-primary text-white text-xs">
-                        {teamPlayers[0].name
+                        {team.players[0].playerName
                           .split(' ')
                           .map((n) => n[0])
                           .join('')
                           .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-medium">{teamPlayers[0].name}</span>
+                    <span className="text-sm font-medium">{team.players[0].playerName}</span>
                   </div>
                 )}
               </CardContent>
@@ -421,21 +451,38 @@ export function TeamDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-4xl font-bold text-red-600 dark:text-red-400">5/28</p>
-                <p className="text-sm text-muted-foreground mt-2">Best Bowling Figures</p>
-                {teamPlayers[1] && (
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-borderShadcn/30">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="bg-primary text-white text-xs">
-                        {teamPlayers[1].name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')
-                          .toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium">{teamPlayers[1].name}</span>
-                  </div>
+                {team.players && team.players.length > 0 && team.players.find(p => p.bestBowling) ? (
+                  <>
+                    <p className="text-4xl font-bold text-red-600 dark:text-red-400">
+                      {team.players.find(p => p.bestBowling)?.bestBowling || 'N/A'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">Best Bowling Figures</p>
+                    {(() => {
+                      const bestBowlingPlayer = team.players.find(p => p.bestBowling)
+                      return bestBowlingPlayer ? (
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-borderShadcn/30">
+                          <Avatar className="h-6 w-6">
+                            {bestBowlingPlayer.playerProfilePic ? (
+                              <AvatarImage src={bestBowlingPlayer.playerProfilePic} alt={bestBowlingPlayer.playerName} />
+                            ) : null}
+                            <AvatarFallback className="bg-primary text-white text-xs">
+                              {bestBowlingPlayer.playerName
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">{bestBowlingPlayer.playerName}</span>
+                        </div>
+                      ) : null
+                    })()}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-4xl font-bold text-red-600 dark:text-red-400">N/A</p>
+                    <p className="text-sm text-muted-foreground mt-2">No bowling data available</p>
+                  </>
                 )}
               </CardContent>
             </Card>

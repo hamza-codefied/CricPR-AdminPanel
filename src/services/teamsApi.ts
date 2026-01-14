@@ -31,6 +31,50 @@ export interface TeamsParams {
   sortBy?: string
 }
 
+export interface TeamPlayer {
+  playerId: string
+  playerName: string
+  playerProfilePic: string | null
+  playerRole: string
+  battingStyle: string
+  bowlingStyle: string
+  matches: number
+  runs: number
+  wickets: number
+  highestScore: number
+  bestBowling: string | null
+  economy: number
+  average: number
+  strikeRate: number
+}
+
+export interface TeamMatch {
+  title: string
+  date: string
+  status: string
+  result: string | null
+}
+
+export interface TeamDetail {
+  teamId: string
+  teamName: string
+  teamLogo: string | null
+  teamCaptain: string
+  teamCaptainId: string
+  teamCountry: string | null
+  teamCity: string
+  matchesPlayed: number
+  wins: number
+  losses: number
+  winRate: number
+  totalRuns: number
+  totalPlayers: number
+  totalWickets: number
+  highestScore: number
+  players: TeamPlayer[]
+  matches: TeamMatch[]
+}
+
 // Teams API functions
 export const teamsApi = {
   /**
@@ -48,6 +92,20 @@ export const teamsApi = {
 
       const response = await api.get<TeamsResponse>(
         `/admin/teams?${queryParams.toString()}`
+      )
+      return response.data
+    } catch (error) {
+      throw new Error(handleApiError(error))
+    }
+  },
+
+  /**
+   * Get team details by ID
+   */
+  getTeamById: async (teamId: string): Promise<TeamDetail> => {
+    try {
+      const response = await api.get<TeamDetail>(
+        `/admin/teamDetails/${teamId}`
       )
       return response.data
     } catch (error) {
