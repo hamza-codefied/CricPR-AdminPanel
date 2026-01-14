@@ -62,6 +62,38 @@ export interface TopTalentParams {
   limit?: number
 }
 
+export interface RecentMatch {
+  id: string
+  title: string
+  teams: string
+  matchType: string
+  tournamentName: string | null
+  startedAt: string
+  status: string
+  result: string | null
+}
+
+export interface MatchesOverTime {
+  label: string
+  count: number
+}
+
+export interface RecentMatchesResponse {
+  matches: RecentMatch[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+  matchesOverTime: MatchesOverTime[]
+}
+
+export interface RecentMatchesParams {
+  matches?: number
+  page?: number
+}
+
 // Dashboard API functions
 export const dashboardApi = {
   /**
@@ -91,6 +123,24 @@ export const dashboardApi = {
 
       const response = await api.get<TopTalentResponse>(
         `/admin/topTalent?${queryParams.toString()}`
+      )
+      return response.data
+    } catch (error) {
+      throw new Error(handleApiError(error))
+    }
+  },
+
+  /**
+   * Get recent matches and matches over time
+   */
+  getRecentMatches: async (params: RecentMatchesParams = {}): Promise<RecentMatchesResponse> => {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params.matches) queryParams.append('matches', params.matches.toString())
+      if (params.page) queryParams.append('page', params.page.toString())
+
+      const response = await api.get<RecentMatchesResponse>(
+        `/admin/recentMatches?${queryParams.toString()}`
       )
       return response.data
     } catch (error) {

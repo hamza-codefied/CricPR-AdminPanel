@@ -18,10 +18,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import {
-  mockMatches,
   mockUsers,
 } from "../../services/mockData";
-import { useDashboard, useTopTalent } from "../../hooks/useDashboard";
+import { useDashboard, useTopTalent, useRecentMatches } from "../../hooks/useDashboard";
 import {
   Table,
   TableBody,
@@ -43,14 +42,7 @@ import {
   AvatarImage,
 } from "../../components/ui/avatar";
 
-const matchesOverTime = [
-  { month: "Jan", matches: 12 },
-  { month: "Feb", matches: 19 },
-  { month: "Mar", matches: 15 },
-  { month: "Apr", matches: 22 },
-  { month: "May", matches: 18 },
-  { month: "Jun", matches: 25 },
-];
+// matchesOverTime will come from API
 
 const topRunScorers = [
   { name: "Virat Kohli", runs: 2345 },
@@ -82,6 +74,10 @@ export function Dashboard() {
   const [skillFilter, setSkillFilter] = useState("batsman");
   const [currentPage, setCurrentPage] = useState(1);
   const { dashboardData, isLoading: isLoadingDashboard } = useDashboard();
+  const { recentMatchesData, isLoading: isLoadingRecentMatches } = useRecentMatches({
+    matches: 5,
+    page: 1,
+  });
 
   // Map skill filter to API role format
   const apiRole = useMemo(() => {
@@ -424,8 +420,13 @@ export function Dashboard() {
             <CardTitle>Matches Over Time</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={matchesOverTime}>
+            {isLoadingRecentMatches ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <span className="text-muted-foreground">Loading chart data...</span>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={recentMatchesData?.matchesOverTime || []}>
                 <defs>
                   <linearGradient
                     id="matchesGradient"
@@ -444,7 +445,7 @@ export function Dashboard() {
                   opacity={0.3}
                 />
                 <XAxis
-                  dataKey="month"
+                  dataKey="label"
                   stroke="#6B7280"
                   tick={{ fill: "#6B7280", fontSize: 12 }}
                 />
@@ -463,7 +464,7 @@ export function Dashboard() {
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="matches"
+                  dataKey="count"
                   stroke="#0E795D"
                   strokeWidth={3}
                   dot={{ fill: "#0E795D", r: 5 }}
@@ -477,6 +478,7 @@ export function Dashboard() {
                 </defs>
               </LineChart>
             </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -666,38 +668,56 @@ export function Dashboard() {
             <TableHeader>
               <TableRow>
                 <TableHead>Match</TableHead>
-                <TableHead>Tournament</TableHead>
+                <TableHead>Tournament / Match Type</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Result</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockMatches.slice(0, 10).map((match) => (
-                <TableRow key={match.id}>
-                  <TableCell>
-                    {match.teamA} vs {match.teamB}
+              {isLoadingRecentMatches ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    <span className="text-muted-foreground">Loading matches...</span>
                   </TableCell>
-                  <TableCell>{match.tournament}</TableCell>
-                  <TableCell>
-                    {format(new Date(match.date), "MMM dd, yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs ${
-                        match.status === "completed"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                          : match.status === "live"
-                          ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                          : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
-                      }`}
-                    >
-                      {match.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>{match.result}</TableCell>
                 </TableRow>
-              ))}
+              ) : !recentMatchesData?.matches || recentMatchesData.matches.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    No matches found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                recentMatchesData.matches.map((match) => (
+                  <TableRow 
+                    key={match.id}
+                    className="cursor-pointer hover:bg-primary/5 transition-colors"
+                    onClick={() => navigate(`/matches/${match.id}`)}
+                  >
+                    <TableCell>
+                      {match.teams}
+                    </TableCell>
+                    <TableCell>{match.tournamentName || match.matchType}</TableCell>
+                    <TableCell>
+                      {format(new Date(match.startedAt), "MMM dd, yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs ${
+                          match.status === "completed"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : match.status === "live"
+                            ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                            : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                        }`}
+                      >
+                        {match.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>{match.result || "N/A"}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

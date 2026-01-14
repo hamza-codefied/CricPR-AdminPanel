@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { dashboardApi, type TopTalentParams } from '../services/dashboardApi'
+import { dashboardApi, type TopTalentParams, type RecentMatchesParams } from '../services/dashboardApi'
 
 /**
  * Custom hook for dashboard data
@@ -49,6 +49,34 @@ export function useTopTalent(params: TopTalentParams) {
     isError: topTalentQuery.isError,
     error: topTalentQuery.error,
     refetch: topTalentQuery.refetch,
+  }
+}
+
+/**
+ * Custom hook for recent matches data
+ */
+export function useRecentMatches(params: RecentMatchesParams = {}) {
+  // Create a stable query key
+  const queryKey = [
+    'dashboard',
+    'recentMatches',
+    params.matches || 5,
+    params.page || 1,
+  ]
+
+  const recentMatchesQuery = useQuery({
+    queryKey,
+    queryFn: () => dashboardApi.getRecentMatches(params),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false,
+  })
+
+  return {
+    recentMatchesData: recentMatchesQuery.data,
+    isLoading: recentMatchesQuery.isLoading,
+    isError: recentMatchesQuery.isError,
+    error: recentMatchesQuery.error,
+    refetch: recentMatchesQuery.refetch,
   }
 }
 
