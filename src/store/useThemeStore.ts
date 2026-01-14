@@ -36,13 +36,38 @@ export const useThemeStore = create<ThemeState>((set) => {
     toggleTheme: () => {
       set((state) => {
         const newTheme = state.theme === 'light' ? 'dark' : 'light'
-        document.documentElement.classList.toggle('dark', newTheme === 'dark')
+        
+        // Disable transitions temporarily for smooth theme switch
+        document.documentElement.classList.add('theme-transitioning')
+        
+        // Use requestAnimationFrame for smooth DOM update
+        requestAnimationFrame(() => {
+          document.documentElement.classList.toggle('dark', newTheme === 'dark')
+          
+          // Re-enable transitions after a short delay
+          requestAnimationFrame(() => {
+            document.documentElement.classList.remove('theme-transitioning')
+          })
+        })
+        
         saveThemeToStorage(newTheme)
         return { theme: newTheme }
       })
     },
     setTheme: (theme: 'light' | 'dark') => {
-      document.documentElement.classList.toggle('dark', theme === 'dark')
+      // Disable transitions temporarily for smooth theme switch
+      document.documentElement.classList.add('theme-transitioning')
+      
+      // Use requestAnimationFrame for smooth DOM update
+      requestAnimationFrame(() => {
+        document.documentElement.classList.toggle('dark', theme === 'dark')
+        
+        // Re-enable transitions after a short delay
+        requestAnimationFrame(() => {
+          document.documentElement.classList.remove('theme-transitioning')
+        })
+      })
+      
       saveThemeToStorage(theme)
       set({ theme })
     },
