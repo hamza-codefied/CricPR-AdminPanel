@@ -1,4 +1,4 @@
-import { Search, Bell, User, LogOut, Menu } from 'lucide-react'
+import { User, LogOut, Menu } from 'lucide-react'
 import { Button } from '../ui/button'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -34,35 +34,10 @@ export function Header({ onMenuClick }: HeaderProps) {
       >
         <Menu className="h-5 w-5" />
       </Button>
-      
-      {/* Search Input - Separate container */}
-      <div className="hidden md:block relative flex-1 max-w-md ml-auto">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-        <input
-          type="search"
-          placeholder="Search..."
-          className="w-full rounded-lg border-2 border-input bg-background pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-        />
-      </div>
 
       {/* Icons Container - Fixed position, no overlap */}
       <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
         <ThemeToggle />
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="relative hover:bg-accent transition-colors"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            // Add notification functionality here if needed
-            console.log('Notifications clicked')
-          }}
-          type="button"
-        >
-          <Bell className="h-5 w-5 pointer-events-none" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red animate-pulse pointer-events-none" />
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
