@@ -1,35 +1,63 @@
 import { create } from 'zustand'
+import type { UserRole } from '../services/authApi'
 
-interface User {
+export interface User {
   id: string
   name: string
   email: string
   role: string
+  roles?: UserRole[]
+}
+
+export interface AuthData {
+  user: User
+  token: string
+  refreshToken?: string
+  tokenExpiry?: string
 }
 
 interface AuthState {
   user: User | null
   token: string | null
+  refreshToken: string | null
+  tokenExpiry: string | null
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
+  setAuthData: (data: AuthData) => void
   logout: () => void
+  checkTokenValidity: () => boolean
 }
 
-const loadAuthFromStorage = () => {
+const loadAuthFromStorage = (): Partial<AuthState> => {
   try {
     const stored = localStorage.getItem('auth-storage')
     if (stored) {
       const parsed = JSON.parse(stored)
+      const token = parsed.token || null
+      const tokenExpiry = parsed.tokenExpiry || null
+      
+      // Check if token is expired
+      if (token && tokenExpiry) {
+        const expiryDate = new Date(tokenExpiry)
+        const now = new Date()
+        if (expiryDate <= now) {
+          // Token expired, clear storage
+          localStorage.removeItem('auth-storage')
+          return { user: null, token: null, refreshToken: null, tokenExpiry: null, isAuthenticated: false }
+        }
+      }
+      
       return {
         user: parsed.user || null,
-        token: parsed.token || null,
-        isAuthenticated: parsed.isAuthenticated || false,
+        token: token,
+        refreshToken: parsed.refreshToken || null,
+        tokenExpiry: tokenExpiry,
+        isAuthenticated: !!(token && parsed.user),
       }
     }
   } catch {
     // Ignore
   }
-  return { user: null, token: null, isAuthenticated: false }
+  return { user: null, token: null, refreshToken: null, tokenExpiry: null, isAuthenticated: false }
 }
 
 const saveAuthToStorage = (state: Partial<AuthState>) => {
@@ -40,42 +68,57 @@ const saveAuthToStorage = (state: Partial<AuthState>) => {
   }
 }
 
-export const useAuthStore = create<AuthState>((set) => {
+export const useAuthStore = create<AuthState>((set, get) => {
   const initialState = loadAuthFromStorage()
   
   return {
     ...initialState,
-    login: async (email: string, password: string) => {
-      // Mock login - replace with actual API call
-      if (email === 'admin@cricpr.com' && password === 'admin123') {
-        const mockUser = {
-          id: '1',
-          name: 'Admin User',
-          email: 'admin@cricpr.com',
-          role: 'admin',
-        }
-        const mockToken = 'mock-jwt-token-' + Date.now()
-        
-        const newState = {
-          user: mockUser,
-          token: mockToken,
-          isAuthenticated: true,
-        }
-        
-        saveAuthToStorage(newState)
-        set(newState)
-      } else {
-        throw new Error('Invalid credentials')
+    user: initialState.user || null,
+    token: initialState.token || null,
+    refreshToken: initialState.refreshToken || null,
+    tokenExpiry: initialState.tokenExpiry || null,
+    isAuthenticated: initialState.isAuthenticated || false,
+    
+    setAuthData: (data: AuthData) => {
+      const newState = {
+        user: data.user,
+        token: data.token,
+        refreshToken: data.refreshToken || null,
+        tokenExpiry: data.tokenExpiry || null,
+        isAuthenticated: true,
       }
+      saveAuthToStorage(newState)
+      set(newState)
     },
+    
     logout: () => {
       const newState = {
         user: null,
         token: null,
+        refreshToken: null,
+        tokenExpiry: null,
         isAuthenticated: false,
       }
-      saveAuthToStorage(newState)
+      localStorage.removeItem('auth-storage')
       set(newState)
+    },
+    
+    checkTokenValidity: () => {
+      const state = get()
+      if (!state.token || !state.tokenExpiry) {
+        return false
+      }
+      
+      const expiryDate = new Date(state.tokenExpiry)
+      const now = new Date()
+      const isValid = expiryDate > now
+      
+      if (!isValid) {
+        // Token expired, logout
+        get().logout()
+      }
+      
+      return isValid
     },
   }
 })

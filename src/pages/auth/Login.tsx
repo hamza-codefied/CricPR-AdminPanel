@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useThemeStore } from "../../store/useThemeStore";
+import { useAuth } from "../../hooks/useAuth";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -15,6 +16,7 @@ import {
   CardHeader,
 } from "../../components/ui/card";
 import { useToast } from "../../components/ui/toast";
+import { Eye, EyeOff } from "lucide-react";
 import logo from "../../assets/CircPr-logo.png";
 
 const loginSchema = z.object({
@@ -26,10 +28,11 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function Login() {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { setTheme } = useThemeStore();
   const { addToast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const { loginAsync, isLoading } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -42,11 +45,18 @@ export function Login() {
     const savedTheme = localStorage.getItem("theme-storage");
     if (savedTheme) {
       try {
-        const theme = JSON.parse(savedTheme).state.theme;
-        setTheme(theme);
+        const parsed = JSON.parse(savedTheme);
+        const theme = parsed.theme || parsed.state?.theme;
+        if (theme) {
+          setTheme(theme);
+        } else {
+          setTheme("light");
+        }
       } catch {
         setTheme("light");
       }
+    } else {
+      setTheme("light");
     }
   }, [setTheme]);
 
@@ -59,9 +69,11 @@ export function Login() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
     try {
-      await login(data.email, data.password);
+      await loginAsync({
+        email: data.email,
+        password: data.password,
+      });
       addToast({
         title: "Success",
         description: "Logged in successfully",
@@ -74,8 +86,6 @@ export function Login() {
         description: error.message || "Invalid credentials",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -127,13 +137,27 @@ export function Login() {
               <Label htmlFor="password" className="text-sm font-semibold">
                 Password
               </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className="h-11 border-2 focus:border-primary transition-colors"
-                {...register("password")}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="h-11 border-2 focus:border-primary transition-colors pr-10"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-sm text-red font-medium">
                   {errors.password.message}
@@ -147,12 +171,6 @@ export function Login() {
             >
               {isLoading ? "Logging in..." : "Login"}
             </Button>
-            <div className="pt-2">
-              <p className="text-xs text-center text-muted-foreground bg-muted/50 rounded-lg py-2 px-3">
-                <span className="font-semibold">Demo Credentials:</span>{" "}
-                admin@cricpr.com / admin123
-              </p>
-            </div>
           </form>
         </CardContent>
       </Card>
