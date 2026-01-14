@@ -106,6 +106,28 @@ export interface RecentSignupsResponse {
   results: RecentSignup[]
 }
 
+export interface TopRunScorer {
+  runs: number
+  name: string
+  playerId: string
+}
+
+export interface TopWicketTaker {
+  wickets: number
+  name: string
+  playerId: string
+}
+
+export interface TopRunsAndWicketsResponse {
+  runScorers: TopRunScorer[]
+  wicketTakers: TopWicketTaker[]
+}
+
+export interface TopRunsAndWicketsParams {
+  runScorers?: number
+  wicketTakers?: number
+}
+
 // Dashboard API functions
 export const dashboardApi = {
   /**
@@ -167,6 +189,24 @@ export const dashboardApi = {
     try {
       const response = await api.get<RecentSignupsResponse>(
         '/admin/recentSignups'
+      )
+      return response.data
+    } catch (error) {
+      throw new Error(handleApiError(error))
+    }
+  },
+
+  /**
+   * Get top run scorers and wicket takers
+   */
+  getTopRunsAndWickets: async (params: TopRunsAndWicketsParams = {}): Promise<TopRunsAndWicketsResponse> => {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params.runScorers) queryParams.append('runScorers', params.runScorers.toString())
+      if (params.wicketTakers) queryParams.append('wicketTakers', params.wicketTakers.toString())
+
+      const response = await api.get<TopRunsAndWicketsResponse>(
+        `/admin/topRunsAndWickets?${queryParams.toString()}`
       )
       return response.data
     } catch (error) {

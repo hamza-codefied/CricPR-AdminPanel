@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { dashboardApi, type TopTalentParams, type RecentMatchesParams } from '../services/dashboardApi'
+import { dashboardApi, type TopTalentParams, type RecentMatchesParams, type TopRunsAndWicketsParams } from '../services/dashboardApi'
 
 /**
  * Custom hook for dashboard data
@@ -97,6 +97,33 @@ export function useRecentSignups() {
     isError: recentSignupsQuery.isError,
     error: recentSignupsQuery.error,
     refetch: recentSignupsQuery.refetch,
+  }
+}
+
+/**
+ * Custom hook for top runs and wickets data
+ */
+export function useTopRunsAndWickets(params: TopRunsAndWicketsParams = {}) {
+  const queryKey = [
+    'dashboard',
+    'topRunsAndWickets',
+    params.runScorers || 5,
+    params.wicketTakers || 5,
+  ]
+
+  const topRunsAndWicketsQuery = useQuery({
+    queryKey,
+    queryFn: () => dashboardApi.getTopRunsAndWickets(params),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false,
+  })
+
+  return {
+    topRunsAndWicketsData: topRunsAndWicketsQuery.data,
+    isLoading: topRunsAndWicketsQuery.isLoading,
+    isError: topRunsAndWicketsQuery.isError,
+    error: topRunsAndWicketsQuery.error,
+    refetch: topRunsAndWicketsQuery.refetch,
   }
 }
 

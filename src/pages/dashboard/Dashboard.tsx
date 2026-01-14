@@ -18,7 +18,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 // mockUsers removed - using API data now
-import { useDashboard, useTopTalent, useRecentMatches, useRecentSignups } from "../../hooks/useDashboard";
+import { useDashboard, useTopTalent, useRecentMatches, useRecentSignups, useTopRunsAndWickets } from "../../hooks/useDashboard";
 import {
   Table,
   TableBody,
@@ -42,21 +42,7 @@ import {
 
 // matchesOverTime will come from API
 
-const topRunScorers = [
-  { name: "Virat Kohli", runs: 2345 },
-  { name: "Rohit Sharma", runs: 2890 },
-  { name: "MS Dhoni", runs: 2100 },
-  { name: "Ravindra Jadeja", runs: 1567 },
-  { name: "KL Rahul", runs: 1890 },
-];
-
-const topWicketTakers = [
-  { name: "Jasprit Bumrah", wickets: 89 },
-  { name: "Mohammed Shami", wickets: 76 },
-  { name: "Ravindra Jadeja", wickets: 67 },
-  { name: "Yuzvendra Chahal", wickets: 64 },
-  { name: "Kuldeep Yadav", wickets: 58 },
-];
+// topRunScorers and topWicketTakers removed - using API data now
 
 // Map frontend role to API role
 const roleMapping: Record<string, string> = {
@@ -77,6 +63,10 @@ export function Dashboard() {
     page: 1,
   });
   const { recentSignupsData, isLoading: isLoadingRecentSignups } = useRecentSignups();
+  const { topRunsAndWicketsData, isLoading: isLoadingTopRunsAndWickets } = useTopRunsAndWickets({
+    runScorers: 5,
+    wicketTakers: 5,
+  });
 
   // Map skill filter to API role format
   const apiRole = useMemo(() => {
@@ -560,8 +550,13 @@ export function Dashboard() {
             <CardTitle>Top 5 Run Scorers</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topRunScorers} layout="vertical">
+            {isLoadingTopRunsAndWickets ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <span className="text-muted-foreground">Loading chart data...</span>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topRunsAndWicketsData?.runScorers || []} layout="vertical">
                 <defs>
                   <linearGradient
                     id="runsScorersGradient"
@@ -607,6 +602,7 @@ export function Dashboard() {
                 />
               </BarChart>
             </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -615,8 +611,13 @@ export function Dashboard() {
             <CardTitle>Top 5 Wicket Takers</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topWicketTakers} layout="vertical">
+            {isLoadingTopRunsAndWickets ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <span className="text-muted-foreground">Loading chart data...</span>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topRunsAndWicketsData?.wicketTakers || []} layout="vertical">
                 <defs>
                   <linearGradient
                     id="wicketsTakersGradient"
@@ -662,6 +663,7 @@ export function Dashboard() {
                 />
               </BarChart>
             </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
