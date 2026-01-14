@@ -130,12 +130,12 @@ export function MatchesList() {
               </option>
             ))}
           </Select>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full">
             <Button
               onClick={handleResetFilters}
               variant="outline"
               size="sm"
-              className="shadow-sm hover:shadow-md"
+              className="flex-1 shadow-sm hover:shadow-md"
             >
               Reset
             </Button>
@@ -143,7 +143,7 @@ export function MatchesList() {
               onClick={handleExport}
               variant="outline"
               size="sm"
-              className="shadow-sm hover:shadow-md"
+              className="flex-1 shadow-sm hover:shadow-md"
             >
               <Download className="mr-2 h-4 w-4" />
               Export CSV
