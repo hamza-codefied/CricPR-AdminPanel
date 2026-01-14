@@ -29,10 +29,13 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function Login() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
-  const { setTheme } = useThemeStore();
+  const { setTheme, theme } = useThemeStore();
   const { addToast } = useToast();
   const { loginAsync, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Use dark logo for dark mode, regular logo for light mode
+  const logoSrc = theme === 'dark' ? '/logo_dark.png' : logo;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -103,7 +106,7 @@ export function Login() {
         <CardHeader className="space-y-4 text-center pb-8">
           <div className="mx-auto mb-2 flex items-center justify-center">
             <img
-              src={logo}
+              src={logoSrc}
               alt="CricPR Logo"
               className="h-20 w-auto object-contain drop-shadow-lg"
             />

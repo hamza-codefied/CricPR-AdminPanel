@@ -15,6 +15,7 @@ import { cn } from "../../utils/cn";
 import { Button } from "../ui/button";
 import logo from "../../assets/CircPr-logo.png";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useThemeStore } from "../../store/useThemeStore";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -36,6 +37,10 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuthStore();
+  const { theme } = useThemeStore();
+  
+  // Use dark logo for dark mode, regular logo for light mode
+  const logoSrc = theme === 'dark' ? '/logo_dark.png' : logo;
 
   const handleLogout = () => {
     logout();
@@ -55,7 +60,7 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
         >
           <div className="relative flex-shrink-0">
             <img
-              src={logo}
+              src={logoSrc}
               alt="CricPR Logo"
               className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
             />
