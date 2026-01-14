@@ -70,7 +70,7 @@ const topWicketTakers = [
 export function Dashboard() {
   const navigate = useNavigate();
   const [cityFilter, setCityFilter] = useState("");
-  const [skillFilter, setSkillFilter] = useState("");
+  const [skillFilter, setSkillFilter] = useState("batsman");
 
   // Top Talent data with additional fields
   const topTalent = mockPlayers.map((player, index) => ({
@@ -190,10 +190,9 @@ export function Dashboard() {
               <Select
                 value={skillFilter}
                 onChange={setSkillFilter}
-                placeholder="All Skills"
+                placeholder="Select Skill"
                 className="sm:w-[200px]"
               >
-                <option value="">All Skills</option>
                 {skills.map((skill) => (
                   <option key={skill} value={skill}>
                     {skill.charAt(0).toUpperCase() + skill.slice(1)}
@@ -213,14 +212,13 @@ export function Dashboard() {
                     <TableHead>Role</TableHead>
                     <TableHead>Runs</TableHead>
                     <TableHead>Wickets</TableHead>
-                    <TableHead>Performance</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTopTalent.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={7} className="h-24 text-center">
                         No players found.
                       </TableCell>
                     </TableRow>
@@ -261,21 +259,6 @@ export function Dashboard() {
                         </TableCell>
                         <TableCell className="font-semibold">
                           {player.wickets}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary-button-gradient rounded-full transition-all"
-                                style={{
-                                  width: `${(player.performance / 200) * 100}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium w-12 text-right">
-                              {player.performance}
-                            </span>
-                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge
