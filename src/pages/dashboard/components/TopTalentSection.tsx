@@ -16,16 +16,16 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 import { Select } from "../../../components/ui/select";
+import { Input } from "../../../components/ui/input";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "../../../components/ui/avatar";
 import { useTopTalent } from "../../../hooks/useDashboard";
-import type { TopTalentResponse } from "../../../services/dashboardApi";
 import { ROLE_MAPPING } from "../constants";
 
 interface TopTalentSectionProps {
@@ -36,6 +36,7 @@ export function TopTalentSection({ initialSkillFilter = "batsman" }: TopTalentSe
   const navigate = useNavigate();
   const [cityFilter, setCityFilter] = useState("");
   const [skillFilter, setSkillFilter] = useState(initialSkillFilter);
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   // Map skill filter to API role format
@@ -70,6 +71,17 @@ export function TopTalentSection({ initialSkillFilter = "batsman" }: TopTalentSe
     return uniqueCities;
   }, [topTalentData]);
 
+  // Filter players locally by search query
+  const filteredPlayers = useMemo(() => {
+    if (!topTalentData?.results) return [];
+    if (!searchQuery.trim()) return topTalentData.results;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return topTalentData.results.filter((player) =>
+      player.name.toLowerCase().includes(query)
+    );
+  }, [topTalentData?.results, searchQuery]);
+
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -88,42 +100,59 @@ export function TopTalentSection({ initialSkillFilter = "batsman" }: TopTalentSe
       <CardContent>
         <div className="space-y-4">
           {/* Filters */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <Select
-              value={cityFilter}
-              onChange={(value: string | React.ChangeEvent<HTMLSelectElement>) => {
-                const cityValue = typeof value === 'string' 
-                  ? value 
-                  : (value as React.ChangeEvent<HTMLSelectElement>)?.target?.value || '';
-                setCityFilter(cityValue);
-              }}
-              placeholder="All Cities"
-              className="sm:w-[200px]"
-            >
-              <option value="">All Cities</option>
-              {cities.map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </Select>
-            <Select
-              value={skillFilter}
-              onChange={(value: string | React.ChangeEvent<HTMLSelectElement>) => {
-                const skillValue = typeof value === 'string' 
-                  ? value 
-                  : (value as React.ChangeEvent<HTMLSelectElement>)?.target?.value || 'batsman';
-                setSkillFilter(skillValue);
-              }}
-              placeholder="Select Skill"
-              className="sm:w-[200px]"
-            >
-              {skills.map((skill) => (
-                <option key={skill} value={skill}>
-                  {skill.charAt(0).toUpperCase() + skill.slice(1)}
-                </option>
-              ))}
-            </Select>
+          <div className="p-4 bg-muted/30 rounded-xl border border-borderShadcn/50">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="search"
+                  placeholder="Search by player name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 border-2 focus:border-primary w-full"
+                />
+              </div>
+
+              {/* City Filter */}
+              <Select
+                value={cityFilter}
+                onChange={(value: string | React.ChangeEvent<HTMLSelectElement>) => {
+                  const cityValue = typeof value === 'string' 
+                    ? value 
+                    : (value as React.ChangeEvent<HTMLSelectElement>)?.target?.value || '';
+                  setCityFilter(cityValue);
+                }}
+                placeholder="All Cities"
+                className="w-full border-2 focus:border-primary"
+              >
+                <option value="">All Cities</option>
+                {cities.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </Select>
+
+              {/* Skill Filter */}
+              <Select
+                value={skillFilter}
+                onChange={(value: string | React.ChangeEvent<HTMLSelectElement>) => {
+                  const skillValue = typeof value === 'string' 
+                    ? value 
+                    : (value as React.ChangeEvent<HTMLSelectElement>)?.target?.value || 'batsman';
+                  setSkillFilter(skillValue);
+                }}
+                placeholder="Select Skill"
+                className="w-full border-2 focus:border-primary"
+              >
+                {skills.map((skill) => (
+                  <option key={skill} value={skill}>
+                    {skill.charAt(0).toUpperCase() + skill.slice(1)}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
 
           {/* Top Talent Table */}
@@ -147,14 +176,14 @@ export function TopTalentSection({ initialSkillFilter = "batsman" }: TopTalentSe
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {!topTalentData?.results || topTalentData.results.length === 0 ? (
+                    {!filteredPlayers || filteredPlayers.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center">
-                          No players found.
+                          {searchQuery.trim() ? "No players found matching your search." : "No players found."}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      topTalentData.results.map((player) => (
+                      filteredPlayers.map((player) => (
                         <TableRow
                           key={player.playerId}
                           className="cursor-pointer hover:bg-primary/5 transition-colors"
