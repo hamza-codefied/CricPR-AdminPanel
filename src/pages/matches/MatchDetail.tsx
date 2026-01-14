@@ -5,15 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar'
-import { mockMatches } from '../../services/mockData'
+import { useMatch } from '../../hooks/useMatch'
 import { format } from 'date-fns'
 
 export function MatchDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const match = mockMatches.find((m) => m.id === id)
+  const { matchData, isLoading, isError } = useMatch(id)
 
-  if (!match) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-muted-foreground">Loading match details...</p>
+      </div>
+    )
+  }
+
+  if (isError || !matchData) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-muted-foreground">Match not found</p>
@@ -24,8 +32,21 @@ export function MatchDetail() {
     )
   }
 
-  const teamALogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(match.teamA)}&background=0E795D&color=fff&size=128`
-  const teamBLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(match.teamB)}&background=01411C&color=fff&size=128`
+  const match = matchData
+  // Parse team names from matchTitle (e.g., "Town Titans vs Tiger 1")
+  const [teamA, teamB] = match.matchTitle.split(' vs ')
+  const teamALogoFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(teamA)}&background=0E795D&color=fff&size=128`
+  const teamBLogoFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(teamB)}&background=01411C&color=fff&size=128`
+  const teamALogo = match.teamALogo || teamALogoFallback
+  const teamBLogo = match.teamBLogo || teamBLogoFallback
+
+  // Get team data from scorecard - match by team name to ensure correct order
+  const teamAData = match.scorecard.teams.find(t => t.teamName === teamA) || match.scorecard.teams[0]
+  const teamBData = match.scorecard.teams.find(t => t.teamName === teamB) || match.scorecard.teams[1] || match.scorecard.teams[0]
+  
+  // Get team scores from summary - match by team name
+  const teamAScoreData = match.summary.teamScores.find(t => t.teamName === teamA) || match.summary.teamScores[0]
+  const teamBScoreData = match.summary.teamScores.find(t => t.teamName === teamB) || match.summary.teamScores[1] || match.summary.teamScores[0]
 
   return (
     <div className="space-y-6">
@@ -45,40 +66,42 @@ export function MatchDetail() {
         <div className="relative">
           <div className="flex flex-col items-center gap-6 pt-8">
             <div className="text-center space-y-2">
-              <Badge variant="outline" className="bg-white/20 text-white border-white/30 backdrop-blur-sm mb-2">
-                {match.tournament}
-              </Badge>
+              {match.tournamentName && (
+                <Badge variant="outline" className="bg-white/20 text-white border-white/30 backdrop-blur-sm mb-2">
+                  {match.tournamentName}
+                </Badge>
+              )}
               <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-lg">
-                {match.teamA} vs {match.teamB}
+                {match.matchTitle}
               </h1>
             </div>
             <div className="flex items-center gap-8">
               <div className="flex flex-col items-center gap-3">
                 <Avatar className="h-24 w-24 border-4 border-white/30 shadow-xl ring-4 ring-white/20">
-                  <AvatarImage src={teamALogo} alt={match.teamA} />
+                  <AvatarImage src={teamALogo} alt={teamA} />
                   <AvatarFallback className="bg-white/20 text-white text-2xl backdrop-blur-sm">
-                    {match.teamA
+                    {teamA
                       .split(' ')
                       .map((n) => n[0])
                       .join('')
                       .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-white font-semibold text-lg">{match.teamA}</span>
+                <span className="text-white font-semibold text-lg">{teamA}</span>
               </div>
               <div className="text-white text-2xl font-bold">VS</div>
               <div className="flex flex-col items-center gap-3">
                 <Avatar className="h-24 w-24 border-4 border-white/30 shadow-xl ring-4 ring-white/20">
-                  <AvatarImage src={teamBLogo} alt={match.teamB} />
+                  <AvatarImage src={teamBLogo} alt={teamB} />
                   <AvatarFallback className="bg-white/20 text-white text-2xl backdrop-blur-sm">
-                    {match.teamB
+                    {teamB
                       .split(' ')
                       .map((n) => n[0])
                       .join('')
                       .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-white font-semibold text-lg">{match.teamB}</span>
+                <span className="text-white font-semibold text-lg">{teamB}</span>
               </div>
             </div>
             <div className="flex items-center gap-4 text-white/90">
@@ -119,7 +142,9 @@ export function MatchDetail() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Date</p>
-                  <p className="font-semibold">{format(new Date(match.date), 'MMM dd, yyyy')}</p>
+                  <p className="font-semibold">
+                    {match.startDate ? format(new Date(match.startDate), 'MMM dd, yyyy') : 'N/A'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -130,7 +155,7 @@ export function MatchDetail() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Time</p>
-                  <p className="font-semibold">{match.time}</p>
+                  <p className="font-semibold">{match.startTime || 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -141,10 +166,23 @@ export function MatchDetail() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Location</p>
-                  <p className="font-semibold">{match.location}</p>
+                  <p className="font-semibold">{match.location || 'N/A'}</p>
                 </div>
               </div>
             </div>
+            {match.ground && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-cyan-500/10">
+                    <MapPin className="h-4 w-4 text-cyan-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ground</p>
+                    <p className="font-semibold">{match.ground}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-green-500/10">
@@ -175,50 +213,71 @@ export function MatchDetail() {
           <CardHeader className="pb-2 relative">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={teamALogo} alt={match.teamA} />
+                <AvatarImage src={teamALogo} alt={teamA} />
                 <AvatarFallback className="bg-primary text-white text-xs">
-                  {match.teamA
+                  {teamA
                     .split(' ')
-                    .map((n) => n[0])
+                    .map((n: string) => n[0])
                     .join('')
                     .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <CardTitle className="text-sm font-medium">{match.teamA}</CardTitle>
+              <CardTitle className="text-sm font-medium">{teamA}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="relative space-y-4">
             <div>
-              <div className="text-4xl font-bold text-primary">{match.teamAScore}</div>
-              <p className="text-xs text-muted-foreground mt-1">Team Score</p>
+              <div className="text-4xl font-bold text-primary">
+                {teamAScoreData.score}/{teamAScoreData.wickets}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {teamAScoreData.overs} overs
+              </p>
             </div>
             <div className="space-y-3 pt-3 border-t border-borderShadcn/30">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Top Batsman</p>
-                    <p className="text-sm font-semibold">Player 1</p>
+              {(() => {
+                const topBatsman = teamAData.battingStats
+                  .filter(p => p.hasBat)
+                  .sort((a, b) => b.runs - a.runs)[0]
+                return topBatsman ? (
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-green-500" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Top Batsman</p>
+                        <p className="text-sm font-semibold">{topBatsman.playerName}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                        {topBatsman.runs}{topBatsman.isNotOut ? '*' : ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Runs</p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-green-600 dark:text-green-400">85*</p>
-                  <p className="text-xs text-muted-foreground">Runs</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-blue-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Top Bowler</p>
-                    <p className="text-sm font-semibold">Player 3</p>
+                ) : null
+              })()}
+              {(() => {
+                const topBowler = teamBData.bowlingStats
+                  .sort((a, b) => b.wickets - a.wickets || a.runs - b.runs)[0]
+                return topBowler ? (
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-blue-500" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Top Bowler</p>
+                        <p className="text-sm font-semibold">{topBowler.playerName}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                        {topBowler.wickets}/{topBowler.runs}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Wickets</p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-blue-600 dark:text-blue-400">3/28</p>
-                  <p className="text-xs text-muted-foreground">Wickets</p>
-                </div>
-              </div>
+                ) : null
+              })()}
             </div>
           </CardContent>
         </Card>
@@ -228,50 +287,71 @@ export function MatchDetail() {
           <CardHeader className="pb-2 relative">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={teamBLogo} alt={match.teamB} />
+                <AvatarImage src={teamBLogo} alt={teamB} />
                 <AvatarFallback className="bg-primary-dark text-white text-xs">
-                  {match.teamB
+                  {teamB
                     .split(' ')
                     .map((n) => n[0])
                     .join('')
                     .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <CardTitle className="text-sm font-medium">{match.teamB}</CardTitle>
+              <CardTitle className="text-sm font-medium">{teamB}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="relative space-y-4">
             <div>
-              <div className="text-4xl font-bold text-primary-dark">{match.teamBScore}</div>
-              <p className="text-xs text-muted-foreground mt-1">Team Score</p>
+              <div className="text-4xl font-bold text-primary-dark">
+                {teamBScoreData.score}/{teamBScoreData.wickets}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {teamBScoreData.overs} overs
+              </p>
             </div>
             <div className="space-y-3 pt-3 border-t border-borderShadcn/30">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Top Batsman</p>
-                    <p className="text-sm font-semibold">Player 2</p>
+              {(() => {
+                const topBatsman = teamBData.battingStats
+                  .filter(p => p.hasBat)
+                  .sort((a, b) => b.runs - a.runs)[0]
+                return topBatsman ? (
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-green-500" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Top Batsman</p>
+                        <p className="text-sm font-semibold">{topBatsman.playerName}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                        {topBatsman.runs}{topBatsman.isNotOut ? '*' : ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Runs</p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-green-600 dark:text-green-400">72</p>
-                  <p className="text-xs text-muted-foreground">Runs</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-blue-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Top Bowler</p>
-                    <p className="text-sm font-semibold">Player 4</p>
+                ) : null
+              })()}
+              {(() => {
+                const topBowler = teamAData.bowlingStats
+                  .sort((a, b) => b.wickets - a.wickets || a.runs - b.runs)[0]
+                return topBowler ? (
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-blue-500" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Top Bowler</p>
+                        <p className="text-sm font-semibold">{topBowler.playerName}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                        {topBowler.wickets}/{topBowler.runs}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Wickets</p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-blue-600 dark:text-blue-400">2/35</p>
-                  <p className="text-xs text-muted-foreground">Wickets</p>
-                </div>
-              </div>
+                ) : null
+              })()}
             </div>
           </CardContent>
         </Card>
@@ -290,16 +370,16 @@ export function MatchDetail() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={teamALogo} alt={match.teamA} />
+                <AvatarImage src={teamALogo} alt={teamA} />
                 <AvatarFallback className="bg-primary text-white text-xs">
-                  {match.teamA
+                  {teamA
                     .split(' ')
                     .map((n) => n[0])
                     .join('')
                     .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <h3 className="text-lg font-semibold">{match.teamA} - Batting</h3>
+              <h3 className="text-lg font-semibold">{teamA} - Batting</h3>
             </div>
             <div className="rounded-xl border-2 border-borderShadcn/50 overflow-hidden">
               <Table>
@@ -314,31 +394,37 @@ export function MatchDetail() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[1, 2, 3, 4, 5].map((i) => {
-                    const runs = Math.floor(Math.random() * 100)
-                    const balls = Math.floor(Math.random() * 50)
-                    const fours = Math.floor(Math.random() * 10)
-                    const sixes = Math.floor(Math.random() * 5)
-                    const sr = balls > 0 ? ((runs / balls) * 100).toFixed(2) : '0.00'
-                    return (
-                      <TableRow key={i} className="hover:bg-primary/5 transition-colors">
-                        <TableCell className="font-medium">Player {i}</TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-semibold text-green-600 dark:text-green-400">{runs}</span>
-                        </TableCell>
-                        <TableCell className="text-right">{balls}</TableCell>
-                        <TableCell className="text-right">
-                          <span className="text-blue-600 dark:text-blue-400">{fours}</span>
+                  {teamAData.battingStats.length > 0 ? (
+                    teamAData.battingStats.map((player, index) => (
+                      <TableRow key={index} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="font-medium">
+                          {player.playerName}
+                          {player.isNotOut && player.hasBat && <span className="text-green-600 ml-1">*</span>}
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className="text-purple-600 dark:text-purple-400">{sixes}</span>
+                          <span className="font-semibold text-green-600 dark:text-green-400">{player.runs}</span>
+                        </TableCell>
+                        <TableCell className="text-right">{player.balls}</TableCell>
+                        <TableCell className="text-right">
+                          <span className="text-blue-600 dark:text-blue-400">{player.fours}</span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className="font-semibold text-yellow-600 dark:text-yellow-400">{sr}</span>
+                          <span className="text-purple-600 dark:text-purple-400">{player.sixes}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-semibold text-yellow-600 dark:text-yellow-400">
+                            {player.strikeRate.toFixed(2)}
+                          </span>
                         </TableCell>
                       </TableRow>
-                    )
-                  })}
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No batting data available
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -348,16 +434,16 @@ export function MatchDetail() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={teamBLogo} alt={match.teamB} />
+                <AvatarImage src={teamBLogo} alt={teamB} />
                 <AvatarFallback className="bg-primary-dark text-white text-xs">
-                  {match.teamB
+                  {teamB
                     .split(' ')
                     .map((n) => n[0])
                     .join('')
                     .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <h3 className="text-lg font-semibold">{match.teamB} - Bowling</h3>
+              <h3 className="text-lg font-semibold">{teamB} - Bowling</h3>
             </div>
             <div className="rounded-xl border-2 border-borderShadcn/50 overflow-hidden">
               <Table>
@@ -371,27 +457,152 @@ export function MatchDetail() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[1, 2, 3, 4, 5].map((i) => {
-                    const overs = (Math.random() * 4 + 1).toFixed(1)
-                    const runs = Math.floor(Math.random() * 30)
-                    const wickets = Math.floor(Math.random() * 3)
-                    const economy = parseFloat(overs) > 0 ? (runs / parseFloat(overs)).toFixed(2) : '0.00'
-                    return (
-                      <TableRow key={i} className="hover:bg-primary/5 transition-colors">
-                        <TableCell className="font-medium">Player {i}</TableCell>
-                        <TableCell className="text-right">{overs}</TableCell>
+                  {teamBData.bowlingStats.length > 0 ? (
+                    teamBData.bowlingStats.map((player, index) => (
+                      <TableRow key={index} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="font-medium">{player.playerName}</TableCell>
+                        <TableCell className="text-right">{player.overs}</TableCell>
                         <TableCell className="text-right">
-                          <span className="text-red-600 dark:text-red-400">{runs}</span>
+                          <span className="text-red-600 dark:text-red-400">{player.runs}</span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className="font-semibold text-green-600 dark:text-green-400">{wickets}</span>
+                          <span className="font-semibold text-green-600 dark:text-green-400">{player.wickets}</span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className="font-semibold text-blue-600 dark:text-blue-400">{economy}</span>
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">
+                            {player.economy.toFixed(2)}
+                          </span>
                         </TableCell>
                       </TableRow>
-                    )
-                  })}
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        No bowling data available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Team B Batting */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={teamBLogo} alt={teamB} />
+                <AvatarFallback className="bg-primary-dark text-white text-xs">
+                  {teamB
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <h3 className="text-lg font-semibold">{teamB} - Batting</h3>
+            </div>
+            <div className="rounded-xl border-2 border-borderShadcn/50 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">Player</TableHead>
+                    <TableHead className="font-semibold text-right">Runs</TableHead>
+                    <TableHead className="font-semibold text-right">Balls</TableHead>
+                    <TableHead className="font-semibold text-right">4s</TableHead>
+                    <TableHead className="font-semibold text-right">6s</TableHead>
+                    <TableHead className="font-semibold text-right">SR</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {teamBData.battingStats.length > 0 ? (
+                    teamBData.battingStats.map((player, index) => (
+                      <TableRow key={index} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="font-medium">
+                          {player.playerName}
+                          {player.isNotOut && player.hasBat && <span className="text-green-600 ml-1">*</span>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-semibold text-green-600 dark:text-green-400">{player.runs}</span>
+                        </TableCell>
+                        <TableCell className="text-right">{player.balls}</TableCell>
+                        <TableCell className="text-right">
+                          <span className="text-blue-600 dark:text-blue-400">{player.fours}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="text-purple-600 dark:text-purple-400">{player.sixes}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-semibold text-yellow-600 dark:text-yellow-400">
+                            {player.strikeRate.toFixed(2)}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No batting data available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Team A Bowling */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={teamALogo} alt={teamA} />
+                <AvatarFallback className="bg-primary text-white text-xs">
+                  {teamA
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <h3 className="text-lg font-semibold">{teamA} - Bowling</h3>
+            </div>
+            <div className="rounded-xl border-2 border-borderShadcn/50 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">Player</TableHead>
+                    <TableHead className="font-semibold text-right">Overs</TableHead>
+                    <TableHead className="font-semibold text-right">Runs</TableHead>
+                    <TableHead className="font-semibold text-right">Wickets</TableHead>
+                    <TableHead className="font-semibold text-right">Economy</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {teamAData.bowlingStats.length > 0 ? (
+                    teamAData.bowlingStats.map((player, index) => (
+                      <TableRow key={index} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="font-medium">{player.playerName}</TableCell>
+                        <TableCell className="text-right">{player.overs}</TableCell>
+                        <TableCell className="text-right">
+                          <span className="text-red-600 dark:text-red-400">{player.runs}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-semibold text-green-600 dark:text-green-400">{player.wickets}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">
+                            {player.economy.toFixed(2)}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        No bowling data available
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
