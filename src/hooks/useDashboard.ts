@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { dashboardApi } from '../services/dashboardApi'
+import { dashboardApi, type TopTalentParams } from '../services/dashboardApi'
 
 /**
  * Custom hook for dashboard data
@@ -18,6 +18,37 @@ export function useDashboard() {
     isError: dashboardQuery.isError,
     error: dashboardQuery.error,
     refetch: dashboardQuery.refetch,
+  }
+}
+
+/**
+ * Custom hook for top talent data with filters and pagination
+ */
+export function useTopTalent(params: TopTalentParams) {
+  // Create a stable query key that properly serializes params
+  // This ensures React Query refetches when any param changes
+  const queryKey = [
+    'dashboard',
+    'topTalent',
+    params.role || '',
+    params.city || '',
+    params.page || 1,
+    params.limit || 10,
+  ]
+
+  const topTalentQuery = useQuery({
+    queryKey,
+    queryFn: () => dashboardApi.getTopTalent(params),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false,
+  })
+
+  return {
+    topTalentData: topTalentQuery.data,
+    isLoading: topTalentQuery.isLoading,
+    isError: topTalentQuery.isError,
+    error: topTalentQuery.error,
+    refetch: topTalentQuery.refetch,
   }
 }
 
