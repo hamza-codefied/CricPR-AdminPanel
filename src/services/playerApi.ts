@@ -12,6 +12,7 @@ export interface PlayerDetail {
   playerId: string
   name: string
   email: string
+  profileImage: string | null
   phone: string
   city: string
   country: string | null

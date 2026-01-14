@@ -14,7 +14,8 @@ export function PlayerDetail() {
   const navigate = useNavigate()
   const { playerData, isLoading, isError } = usePlayer(id)
   
-  const profileImage = playerData ? `https://ui-avatars.com/api/?name=${encodeURIComponent(playerData.name)}&background=0E795D&color=fff&size=256` : ''
+  const fallbackAvatar = playerData ? `https://ui-avatars.com/api/?name=${encodeURIComponent(playerData.name)}&background=0E795D&color=fff&size=256` : ''
+  const profileImage = playerData?.profileImage || fallbackAvatar
 
   if (isLoading) {
     return (
