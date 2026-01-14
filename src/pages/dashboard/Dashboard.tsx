@@ -18,11 +18,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import {
-  mockDashboardStats,
   mockMatches,
   mockPlayers,
   mockUsers,
 } from "../../services/mockData";
+import { useDashboard } from "../../hooks/useDashboard";
 import {
   Table,
   TableBody,
@@ -71,6 +71,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [cityFilter, setCityFilter] = useState("");
   const [skillFilter, setSkillFilter] = useState("batsman");
+  const { dashboardData, isLoading: isLoadingDashboard } = useDashboard();
 
   // Top Talent data with additional fields
   const topTalent = mockPlayers.map((player, index) => ({
@@ -111,8 +112,18 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-primary">{mockDashboardStats.totalMatches}</div>
-            <p className="text-xs text-muted-foreground mt-1">+12% from last month</p>
+            <div className="text-3xl font-bold text-primary">
+              {isLoadingDashboard ? (
+                <span className="text-muted-foreground">...</span>
+              ) : (
+                dashboardData?.matches.total ?? 0
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {dashboardData?.matches.percentChangeSinceLastMonth !== undefined
+                ? `${dashboardData.matches.percentChangeSinceLastMonth >= 0 ? '+' : ''}${dashboardData.matches.percentChangeSinceLastMonth}% from last month`
+                : 'Loading...'}
+            </p>
           </CardContent>
         </Card>
         <Card className="relative overflow-hidden border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
@@ -126,8 +137,18 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{mockDashboardStats.totalTournaments}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active tournaments</p>
+            <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+              {isLoadingDashboard ? (
+                <span className="text-muted-foreground">...</span>
+              ) : (
+                dashboardData?.tournaments.total ?? 0
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {dashboardData?.tournaments.active !== undefined
+                ? `${dashboardData.tournaments.active} active tournaments`
+                : 'Loading...'}
+            </p>
           </CardContent>
         </Card>
         <Card className="relative overflow-hidden border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
@@ -141,7 +162,13 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{mockDashboardStats.totalTeams}</div>
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+              {isLoadingDashboard ? (
+                <span className="text-muted-foreground">...</span>
+              ) : (
+                dashboardData?.teams.total ?? 0
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Registered teams</p>
           </CardContent>
         </Card>
@@ -156,8 +183,18 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">{mockDashboardStats.totalPlayers}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active players</p>
+            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+              {isLoadingDashboard ? (
+                <span className="text-muted-foreground">...</span>
+              ) : (
+                dashboardData?.players.total ?? 0
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {dashboardData?.players.signupsLast30Days !== undefined
+                ? `${dashboardData.players.signupsLast30Days} signups last 30 days`
+                : 'Active players'}
+            </p>
           </CardContent>
         </Card>
       </div>
