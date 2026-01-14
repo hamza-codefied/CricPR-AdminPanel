@@ -80,3 +80,23 @@ export function useRecentMatches(params: RecentMatchesParams = {}) {
   }
 }
 
+/**
+ * Custom hook for recent user signups
+ */
+export function useRecentSignups() {
+  const recentSignupsQuery = useQuery({
+    queryKey: ['dashboard', 'recentSignups'],
+    queryFn: () => dashboardApi.getRecentSignups(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false,
+  })
+
+  return {
+    recentSignupsData: recentSignupsQuery.data,
+    isLoading: recentSignupsQuery.isLoading,
+    isError: recentSignupsQuery.isError,
+    error: recentSignupsQuery.error,
+    refetch: recentSignupsQuery.refetch,
+  }
+}
+

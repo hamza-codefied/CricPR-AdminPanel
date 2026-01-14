@@ -17,10 +17,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import {
-  mockUsers,
-} from "../../services/mockData";
-import { useDashboard, useTopTalent, useRecentMatches } from "../../hooks/useDashboard";
+// mockUsers removed - using API data now
+import { useDashboard, useTopTalent, useRecentMatches, useRecentSignups } from "../../hooks/useDashboard";
 import {
   Table,
   TableBody,
@@ -78,6 +76,7 @@ export function Dashboard() {
     matches: 5,
     page: 1,
   });
+  const { recentSignupsData, isLoading: isLoadingRecentSignups } = useRecentSignups();
 
   // Map skill filter to API role format
   const apiRole = useMemo(() => {
@@ -414,8 +413,8 @@ export function Dashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-10">
+        <Card className="md:col-span-4">
           <CardHeader>
             <CardTitle>Matches Over Time</CardTitle>
           </CardHeader>
@@ -482,11 +481,11 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="md:col-span-6">
           <CardHeader>
             <CardTitle>Latest User Signups</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Recent 30 users who joined the app
+              Recent users who joined the app
             </p>
           </CardHeader>
           <CardContent>
@@ -499,46 +498,54 @@ export function Dashboard() {
                       <TableHead>Email</TableHead>
                       <TableHead>City</TableHead>
                       <TableHead>Signup Date</TableHead>
-                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockUsers.slice(0, 30).map((user) => (
-                      <TableRow key={user.id} className="hover:bg-primary/5 transition-colors">
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9">
-                              <AvatarImage src={user.profileImage} alt={user.name} />
-                              <AvatarFallback className="bg-primary text-white text-xs">
-                                {user.name
-                                  .split(' ')
-                                  .map((n) => n[0])
-                                  .join('')
-                                  .toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{user.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                        <TableCell>{user.city}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">
-                              {format(new Date(user.signupDate), 'MMM dd, yyyy')}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(user.signupDate), 'hh:mm a')}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={user.status === 'active' ? 'success' : 'secondary'}>
-                            {user.status}
-                          </Badge>
+                    {isLoadingRecentSignups ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                          <span className="text-muted-foreground">Loading users...</span>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : !recentSignupsData?.results || recentSignupsData.results.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                          No users found.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      recentSignupsData.results.map((user, index) => (
+                        <TableRow key={`${user.email}-${index}`} className="hover:bg-primary/5 transition-colors">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-9 w-9">
+                                <AvatarImage src={user.profileImage} alt={user.name} />
+                                <AvatarFallback className="bg-primary text-white text-xs">
+                                  {user.name
+                                    .split(' ')
+                                    .map((n) => n[0])
+                                    .join('')
+                                    .toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{user.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                          <TableCell>{user.city}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">
+                                {format(new Date(user.signupDate), 'MMM dd, yyyy')}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(user.signupDate), 'hh:mm a')}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>

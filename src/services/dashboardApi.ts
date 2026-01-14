@@ -94,6 +94,18 @@ export interface RecentMatchesParams {
   page?: number
 }
 
+export interface RecentSignup {
+  name: string
+  profileImage: string
+  email: string
+  city: string
+  signupDate: string
+}
+
+export interface RecentSignupsResponse {
+  results: RecentSignup[]
+}
+
 // Dashboard API functions
 export const dashboardApi = {
   /**
@@ -141,6 +153,20 @@ export const dashboardApi = {
 
       const response = await api.get<RecentMatchesResponse>(
         `/admin/recentMatches?${queryParams.toString()}`
+      )
+      return response.data
+    } catch (error) {
+      throw new Error(handleApiError(error))
+    }
+  },
+
+  /**
+   * Get recent user signups
+   */
+  getRecentSignups: async (): Promise<RecentSignupsResponse> => {
+    try {
+      const response = await api.get<RecentSignupsResponse>(
+        '/admin/recentSignups'
       )
       return response.data
     } catch (error) {
