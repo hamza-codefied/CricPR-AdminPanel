@@ -28,7 +28,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function Login() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
   const { setTheme, theme } = useThemeStore();
   const { addToast } = useToast();
   const { loginAsync, isLoading } = useAuth();
