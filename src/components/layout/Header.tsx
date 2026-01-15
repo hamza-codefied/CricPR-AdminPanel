@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { User, LogOut, Menu } from 'lucide-react'
 import { Button } from '../ui/button'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuthStore } from '../../store/useAuthStore'
-import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../hooks/useAuth'
+import { ConfirmDeleteDialog } from '../common/ConfirmDeleteDialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,12 +17,16 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { user, logout } = useAuthStore()
-  const navigate = useNavigate()
+  const { user } = useAuthStore()
+  const { logout } = useAuth()
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
 
   const handleLogout = () => {
+    setLogoutDialogOpen(true)
+  }
+
+  const confirmLogout = () => {
     logout()
-    navigate('/login')
   }
 
   return (
@@ -68,6 +74,14 @@ export function Header({ onMenuClick }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ConfirmDeleteDialog
+        open={logoutDialogOpen}
+        onOpenChange={setLogoutDialogOpen}
+        onConfirm={confirmLogout}
+        title="Logout"
+        description="Are you sure you want to logout? You will need to login again to access the admin panel."
+      />
     </header>
   )
 }

@@ -6,16 +6,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Badge } from '../../components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar'
-import { mockTournaments, mockMatches } from '../../services/mockData'
+import { useTournament } from '../../hooks/useTournament'
 import { format } from 'date-fns'
 
 export function TournamentDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const tournament = mockTournaments.find((t) => t.id === id)
-  const tournamentMatches = mockMatches.filter((m) => m.tournament === tournament?.name)
+  const { tournamentData, isLoading, isError } = useTournament(id)
 
-  if (!tournament) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-muted-foreground">Loading tournament details...</p>
+      </div>
+    )
+  }
+
+  if (isError || !tournamentData) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-muted-foreground">Tournament not found</p>
@@ -26,7 +33,9 @@ export function TournamentDetail() {
     )
   }
 
-  const tournamentLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(tournament.name)}&background=0E795D&color=fff&size=256`
+  const tournament = tournamentData
+  const fallbackLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(tournament.tournamentName)}&background=0E795D&color=fff&size=256`
+  const tournamentLogo = tournament.tournamentLogo || fallbackLogo
 
   return (
     <div className="space-y-6">
@@ -46,9 +55,9 @@ export function TournamentDetail() {
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-6">
             <Avatar className="h-32 w-32 border-4 border-white/30 shadow-xl ring-4 ring-white/20">
-              <AvatarImage src={tournamentLogo} alt={tournament.name} />
+              <AvatarImage src={tournamentLogo} alt={tournament.tournamentName} />
               <AvatarFallback className="bg-white/20 text-white text-3xl backdrop-blur-sm">
-                {tournament.name
+                {tournament.tournamentName
                   .split(' ')
                   .map((n) => n[0])
                   .join('')
@@ -57,7 +66,7 @@ export function TournamentDetail() {
             </Avatar>
             <div className="space-y-2">
               <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-lg">
-                {tournament.name}
+                {tournament.tournamentName}
               </h1>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-1.5 text-white/90">
@@ -68,9 +77,9 @@ export function TournamentDetail() {
                 </div>
                 <Badge
                   variant={
-                    tournament.status === 'ongoing'
+                    tournament.status.toLowerCase() === 'ongoing'
                       ? 'success'
-                      : tournament.status === 'upcoming'
+                      : tournament.status.toLowerCase() === 'upcoming'
                       ? 'warning'
                       : 'secondary'
                   }
@@ -129,9 +138,9 @@ export function TournamentDetail() {
           <CardContent className="relative">
             <Badge
               variant={
-                tournament.status === 'ongoing'
+                tournament.status.toLowerCase() === 'ongoing'
                   ? 'success'
-                  : tournament.status === 'upcoming'
+                  : tournament.status.toLowerCase() === 'upcoming'
                   ? 'warning'
                   : 'secondary'
               }
@@ -153,7 +162,7 @@ export function TournamentDetail() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{tournamentMatches.length}</div>
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{tournament.matchesPlayed.length}</div>
             <p className="text-xs text-muted-foreground mt-1">Completed matches</p>
           </CardContent>
         </Card>
@@ -194,37 +203,49 @@ export function TournamentDetail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tournamentMatches.map((match) => (
-                      <TableRow 
-                        key={match.id} 
-                        className="hover:bg-primary/5 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/matches/${match.id}`)}
-                      >
-                        <TableCell className="font-medium">
-                          {match.teamA} vs {match.teamB}
+                    {tournament.matchesPlayed && tournament.matchesPlayed.length > 0 ? (
+                      tournament.matchesPlayed.map((match) => (
+                        <TableRow 
+                          key={match.matchId} 
+                          className="hover:bg-primary/5 transition-colors cursor-pointer"
+                          onClick={() => navigate(`/matches/${match.matchId}`)}
+                        >
+                          <TableCell className="font-medium">
+                            {match.teamA.name} vs {match.teamB.name}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              {match.startDateTime && !isNaN(new Date(match.startDateTime).getTime()) 
+                                ? format(new Date(match.startDateTime), 'MMM dd, yyyy')
+                                : 'N/A'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                match.status === 'completed'
+                                  ? 'success'
+                                  : match.status === 'live'
+                                  ? 'destructive'
+                                  : 'secondary'
+                              }
+                            >
+                              {match.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {match.result ? `${match.result.winningTeamName} won by ${match.result.winningTeamScore}/${match.result.winningTeamWickets} vs ${match.result.losingTeamScore}/${match.result.losingTeamWickets}` : 'N/A'}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          No matches found
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {format(new Date(match.date), 'MMM dd, yyyy')}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              match.status === 'completed'
-                                ? 'success'
-                                : match.status === 'live'
-                                ? 'destructive'
-                                : 'secondary'
-                            }
-                          >
-                            {match.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{match.result}</TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -253,36 +274,91 @@ export function TournamentDetail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {['Team A', 'Team B', 'Team C'].map((team, idx) => {
-                      const position = idx + 1
-                      const played = 10 + idx
-                      const won = 7 + idx
-                      const lost = 3 + idx
-                      const points = won * 2
-                      return (
-                        <TableRow key={team} className="hover:bg-primary/5 transition-colors">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {position === 1 && <Trophy className="h-4 w-4 text-yellow-500" />}
-                              {position === 2 && <Award className="h-4 w-4 text-gray-400" />}
-                              {position === 3 && <Award className="h-4 w-4 text-orange-500" />}
-                              <span className="font-bold text-lg">{position}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-semibold">{team}</TableCell>
-                          <TableCell className="text-right">{played}</TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-semibold text-green-600 dark:text-green-400">{won}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-semibold text-red-600 dark:text-red-400">{lost}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="text-lg font-bold text-primary">{points}</span>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
+                    {tournament.pointsTable && tournament.pointsTable.stages && tournament.pointsTable.stages.length > 0 ? (
+                      tournament.pointsTable.stages.flatMap((stage) => {
+                        if (stage.hasGroups && stage.groups && stage.groups.length > 0) {
+                          return stage.groups.flatMap((group) =>
+                            group.pointsTable
+                              .sort((a, b) => a.position - b.position)
+                              .map((team) => (
+                                <TableRow key={`${stage._id}-${group._id}-${team.id}`} className="hover:bg-primary/5 transition-colors">
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      {team.position === 1 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                                      {team.position === 2 && <Award className="h-4 w-4 text-gray-400" />}
+                                      {team.position === 3 && <Award className="h-4 w-4 text-orange-500" />}
+                                      <span className="font-bold text-lg">{team.position}</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-semibold">
+                                    <div className="flex items-center gap-2">
+                                      {team.teamId.logo && (
+                                        <img src={team.teamId.logo} alt={team.teamId.name} className="h-6 w-6 rounded-full" />
+                                      )}
+                                      <span>{team.teamId.name}</span>
+                                      {group.groupName && (
+                                        <Badge variant="outline" className="text-xs">
+                                          {group.groupName}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right">{team.matchesPlayed}</TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="font-semibold text-green-600 dark:text-green-400">{team.matchesWon}</span>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="font-semibold text-red-600 dark:text-red-400">{team.matchesLost}</span>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="text-lg font-bold text-primary">{team.points}</span>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                          )
+                        } else if (stage.pointsTable && stage.pointsTable.length > 0) {
+                          return stage.pointsTable
+                            .sort((a, b) => a.position - b.position)
+                            .map((team) => (
+                              <TableRow key={`${stage._id}-${team.id}`} className="hover:bg-primary/5 transition-colors">
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {team.position === 1 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                                    {team.position === 2 && <Award className="h-4 w-4 text-gray-400" />}
+                                    {team.position === 3 && <Award className="h-4 w-4 text-orange-500" />}
+                                    <span className="font-bold text-lg">{team.position}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="font-semibold">
+                                  <div className="flex items-center gap-2">
+                                    {team.teamId.logo && (
+                                      <img src={team.teamId.logo} alt={team.teamId.name} className="h-6 w-6 rounded-full" />
+                                    )}
+                                    <span>{team.teamId.name}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right">{team.matchesPlayed}</TableCell>
+                                <TableCell className="text-right">
+                                  <span className="font-semibold text-green-600 dark:text-green-400">{team.matchesWon}</span>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <span className="font-semibold text-red-600 dark:text-red-400">{team.matchesLost}</span>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <span className="text-lg font-bold text-primary">{team.points}</span>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                        }
+                        return []
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          No points table data available
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>

@@ -34,7 +34,7 @@ export function MainLayout() {
         isMobile={isMobile}
       />
       <div className="flex flex-1 flex-col overflow-hidden bg-gradient-to-br from-background via-muted/20 to-background">
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        {/* <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} /> */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <Outlet />
         </main>

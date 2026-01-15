@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -10,12 +11,17 @@ import {
   Menu,
   X,
   LogOut,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { Button } from "../ui/button";
+import { Switch } from "../ui/switch";
 import logo from "../../assets/CircPr-logo.png";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useThemeStore } from "../../store/useThemeStore";
+import { useAuth } from "../../hooks/useAuth";
+import { ConfirmDeleteDialog } from "../common/ConfirmDeleteDialog";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -35,16 +41,19 @@ const menuItems = [
 
 export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { logout } = useAuthStore();
-  const { theme } = useThemeStore();
+  const { logout } = useAuth();
+  const { theme, toggleTheme } = useThemeStore();
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   
   // Use dark logo for dark mode, regular logo for light mode
   const logoSrc = theme === 'dark' ? '/logo_dark.png' : logo;
 
   const handleLogout = () => {
+    setLogoutDialogOpen(true);
+  };
+
+  const confirmLogout = () => {
     logout();
-    navigate("/login");
     if (isMobile) {
       onToggle();
     }
@@ -120,6 +129,37 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
         })}
       </nav>
 
+      {/* Theme Toggle Section */}
+      <div className="border-t border-borderShadcn/50 p-3 sm:p-4">
+        <div className="flex items-center justify-between gap-3 px-2 py-2 rounded-lg">
+          <div className="flex items-center gap-3 flex-1">
+            {theme === 'light' ? (
+              <Sun className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <Moon className="h-5 w-5 text-muted-foreground" />
+            )}
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-foreground">
+                {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {theme === 'light' ? 'Switch to dark' : 'Switch to light'}
+              </span>
+            </div>
+          </div>
+          <Switch
+            checked={theme === 'dark'}
+            onCheckedChange={(checked) => {
+              if (checked !== (theme === 'dark')) {
+                toggleTheme()
+              }
+            }}
+            aria-label="Toggle theme"
+            className="hover:opacity-80 transition-opacity"
+          />
+        </div>
+      </div>
+
       {/* Logout Section */}
       <div className="border-t border-borderShadcn/50 p-3 sm:p-4">
         <Button
@@ -157,14 +197,30 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
             </div>
           </div>
         )}
+        <ConfirmDeleteDialog
+          open={logoutDialogOpen}
+          onOpenChange={setLogoutDialogOpen}
+          onConfirm={confirmLogout}
+          title="Logout"
+          description="Are you sure you want to logout? You will need to login again to access the admin panel."
+        />
       </>
     );
   }
 
   // Desktop: Always show sidebar
   return (
-    <aside className={cn("hidden w-72 transition-all lg:block")}>
-      {sidebarContent}
-    </aside>
+    <>
+      <aside className={cn("hidden w-72 transition-all lg:block")}>
+        {sidebarContent}
+      </aside>
+      <ConfirmDeleteDialog
+        open={logoutDialogOpen}
+        onOpenChange={setLogoutDialogOpen}
+        onConfirm={confirmLogout}
+        title="Logout"
+        description="Are you sure you want to logout? You will need to login again to access the admin panel."
+      />
+    </>
   );
 }

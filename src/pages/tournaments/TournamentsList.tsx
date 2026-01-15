@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Download } from 'lucide-react'
 import { exportTableToCSV } from '../../utils/csv'
 import { useTournaments } from '../../hooks/useTournaments'
+import { tournamentsApi } from '../../services/tournamentsApi'
 import type { Tournament } from '../../services/tournamentsApi'
 import { format } from 'date-fns'
 
@@ -59,23 +60,34 @@ export function TournamentsList() {
   }, [currentPage, limit, filters])
 
   // Fetch tournaments data
-  const { tournamentsData, isLoading } = useTournaments(tournamentsParams)
+  const { tournamentsData, isLoading, refetch } = useTournaments(tournamentsParams)
 
   const handleDelete = (tournament: Tournament) => {
     setSelectedTournament(tournament)
     setDeleteDialogOpen(true)
   }
 
-  const confirmDelete = () => {
-    // TODO: Implement actual delete API call
-    addToast({
-      title: 'Success',
-      description: 'Tournament deleted successfully',
-      variant: 'success',
-    })
-    setSelectedTournament(null)
-    // Refetch data after delete
-    // You can add refetch here when delete API is ready
+  const confirmDelete = async () => {
+    if (!selectedTournament) return
+
+    try {
+      await tournamentsApi.deleteTournament(selectedTournament.tournamentId)
+      addToast({
+        title: 'Success',
+        description: 'Tournament deleted successfully',
+        variant: 'success',
+      })
+      setSelectedTournament(null)
+      setDeleteDialogOpen(false)
+      // Refetch data after delete
+      refetch()
+    } catch (error) {
+      addToast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete tournament',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleResetFilters = () => {

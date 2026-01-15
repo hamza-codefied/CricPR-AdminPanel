@@ -77,11 +77,11 @@ export const authApi = {
   },
 
   /**
-   * Logout (if needed on backend)
+   * Admin logout
    */
-  logout: async (): Promise<void> => {
+  logout: async (refreshToken: string): Promise<void> => {
     try {
-      await api.post('/auth/logout')
+      await api.post('/admin/logout', { refreshToken })
     } catch (error) {
       // Even if logout fails on backend, we still logout on frontend
       console.error('Logout error:', error)

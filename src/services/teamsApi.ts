@@ -112,5 +112,16 @@ export const teamsApi = {
       throw new Error(handleApiError(error))
     }
   },
+
+  /**
+   * Delete team by ID
+   */
+  deleteTeam: async (teamId: string): Promise<void> => {
+    try {
+      await api.delete(`/admin/teams/${teamId}`)
+    } catch (error) {
+      throw new Error(handleApiError(error))
+    }
+  },
 }
 

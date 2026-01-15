@@ -3,24 +3,39 @@ import { PageHeader } from '../../components/common/PageHeader'
 import { TrendingUp, Target, Zap, Award, Trophy } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar'
-
-const topRunScorers = [
-  { name: 'Virat Kohli', runs: 2345, matches: 45 },
-  { name: 'Rohit Sharma', runs: 2890, matches: 48 },
-  { name: 'MS Dhoni', runs: 2100, matches: 52 },
-  { name: 'Ravindra Jadeja', runs: 1567, matches: 50 },
-  { name: 'KL Rahul', runs: 1890, matches: 42 },
-]
-
-const topWicketTakers = [
-  { name: 'Jasprit Bumrah', wickets: 89, matches: 42 },
-  { name: 'Mohammed Shami', wickets: 76, matches: 38 },
-  { name: 'Ravindra Jadeja', wickets: 67, matches: 50 },
-  { name: 'Yuzvendra Chahal', wickets: 64, matches: 40 },
-  { name: 'Kuldeep Yadav', wickets: 58, matches: 35 },
-]
+import { useStats } from '../../hooks/useStats'
 
 export function Stats() {
+  const { statsData, isLoading } = useStats()
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Statistics"
+          description="Comprehensive statistics and analytics"
+        />
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className="text-muted-foreground">Loading statistics...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!statsData) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Statistics"
+          description="Comprehensive statistics and analytics"
+        />
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className="text-muted-foreground">No statistics data available</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -40,7 +55,7 @@ export function Stats() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">1,234</div>
+            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{statsData.totalSixes.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">Maximum sixes hit</p>
           </CardContent>
         </Card>
@@ -55,7 +70,7 @@ export function Stats() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">3,456</div>
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{statsData.totalFours.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">Total boundaries</p>
           </CardContent>
         </Card>
@@ -70,7 +85,7 @@ export function Stats() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">567</div>
+            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">{statsData.totalExtras.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">Extra runs conceded</p>
           </CardContent>
         </Card>
@@ -85,7 +100,7 @@ export function Stats() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">285/6</div>
+            <div className="text-3xl font-bold text-green-600 dark:text-green-400">{statsData.highestTeamTotal}</div>
             <p className="text-xs text-muted-foreground mt-1">Best team score</p>
           </CardContent>
         </Card>
@@ -112,47 +127,55 @@ export function Stats() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topRunScorers.map((player, idx) => {
-                    const playerImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0E795D&color=fff&size=128`
-                    return (
-                      <TableRow key={player.name} className="hover:bg-primary/5 transition-colors">
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
-                            {idx === 1 && <Award className="h-4 w-4 text-gray-400" />}
-                            {idx === 2 && <Award className="h-4 w-4 text-orange-500" />}
-                            {idx > 2 && <span className="w-4 text-center font-bold">{idx + 1}</span>}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7">
-                              <AvatarImage src={playerImage} alt={player.name} />
-                              <AvatarFallback className="bg-primary text-white text-xs">
-                                {player.name
-                                  .split(' ')
-                                  .map((n) => n[0])
-                                  .join('')
-                                  .toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{player.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-semibold text-green-600 dark:text-green-400">
-                            {player.runs.toLocaleString()}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">{player.matches}</TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-semibold text-primary">
-                            {(player.runs / player.matches).toFixed(2)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
+                  {statsData.topRunScorers && statsData.topRunScorers.length > 0 ? (
+                    statsData.topRunScorers.map((player, idx) => {
+                      const playerImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0E795D&color=fff&size=128`
+                      return (
+                        <TableRow key={player.name} className="hover:bg-primary/5 transition-colors">
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                              {idx === 1 && <Award className="h-4 w-4 text-gray-400" />}
+                              {idx === 2 && <Award className="h-4 w-4 text-orange-500" />}
+                              {idx > 2 && <span className="w-4 text-center font-bold">{idx + 1}</span>}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                <AvatarImage src={playerImage} alt={player.name} />
+                                <AvatarFallback className="bg-primary text-white text-xs">
+                                  {player.name
+                                    .split(' ')
+                                    .map((n) => n[0])
+                                    .join('')
+                                    .toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{player.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-semibold text-green-600 dark:text-green-400">
+                              {player.runs.toLocaleString()}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">{player.matches}</TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-semibold text-primary">
+                              {player.average.toFixed(2)}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        No data available
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -179,47 +202,55 @@ export function Stats() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topWicketTakers.map((player, idx) => {
-                    const playerImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0E795D&color=fff&size=128`
-                    return (
-                      <TableRow key={player.name} className="hover:bg-primary/5 transition-colors">
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
-                            {idx === 1 && <Award className="h-4 w-4 text-gray-400" />}
-                            {idx === 2 && <Award className="h-4 w-4 text-orange-500" />}
-                            {idx > 2 && <span className="w-4 text-center font-bold">{idx + 1}</span>}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7">
-                              <AvatarImage src={playerImage} alt={player.name} />
-                              <AvatarFallback className="bg-primary text-white text-xs">
-                                {player.name
-                                  .split(' ')
-                                  .map((n) => n[0])
-                                  .join('')
-                                  .toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{player.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-semibold text-red-600 dark:text-red-400">
-                            {player.wickets}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">{player.matches}</TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-semibold text-primary">
-                            {(player.wickets / player.matches).toFixed(2)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
+                  {statsData.topWicketTakers && statsData.topWicketTakers.length > 0 ? (
+                    statsData.topWicketTakers.map((player, idx) => {
+                      const playerImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0E795D&color=fff&size=128`
+                      return (
+                        <TableRow key={player.name} className="hover:bg-primary/5 transition-colors">
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                              {idx === 1 && <Award className="h-4 w-4 text-gray-400" />}
+                              {idx === 2 && <Award className="h-4 w-4 text-orange-500" />}
+                              {idx > 2 && <span className="w-4 text-center font-bold">{idx + 1}</span>}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                <AvatarImage src={playerImage} alt={player.name} />
+                                <AvatarFallback className="bg-primary text-white text-xs">
+                                  {player.name
+                                    .split(' ')
+                                    .map((n) => n[0])
+                                    .join('')
+                                    .toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{player.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-semibold text-red-600 dark:text-red-400">
+                              {player.wickets}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">{player.matches}</TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-semibold text-primary">
+                              {player.average.toFixed(2)}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        No data available
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -247,15 +278,8 @@ export function Stats() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topRunScorers
-                    .map((p) => ({
-                      name: p.name,
-                      runs: p.runs,
-                      matches: p.matches,
-                      average: parseFloat((p.runs / p.matches).toFixed(2)),
-                    }))
-                    .sort((a, b) => b.average - a.average)
-                    .map((player) => {
+                  {statsData.bestBattingAverages && statsData.bestBattingAverages.length > 0 ? (
+                    statsData.bestBattingAverages.map((player) => {
                       const playerImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0E795D&color=fff&size=128`
                       return (
                         <TableRow key={player.name} className="hover:bg-primary/5 transition-colors">
@@ -276,7 +300,7 @@ export function Stats() {
                           </TableCell>
                           <TableCell className="text-right">
                             <span className="font-semibold text-green-600 dark:text-green-400">
-                              {player.runs.toLocaleString()}
+                              {player.totalRuns.toLocaleString()}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">{player.matches}</TableCell>
@@ -287,7 +311,14 @@ export function Stats() {
                           </TableCell>
                         </TableRow>
                       )
-                    })}
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        No data available
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -313,15 +344,8 @@ export function Stats() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topWicketTakers
-                    .map((p) => ({
-                      name: p.name,
-                      wickets: p.wickets,
-                      matches: p.matches,
-                      average: parseFloat((p.wickets / p.matches).toFixed(2)),
-                    }))
-                    .sort((a, b) => b.average - a.average)
-                    .map((player) => {
+                  {statsData.bestBowlingAverages && statsData.bestBowlingAverages.length > 0 ? (
+                    statsData.bestBowlingAverages.map((player) => {
                       const playerImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0E795D&color=fff&size=128`
                       return (
                         <TableRow key={player.name} className="hover:bg-primary/5 transition-colors">
@@ -353,7 +377,14 @@ export function Stats() {
                           </TableCell>
                         </TableRow>
                       )
-                    })}
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        No data available
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>

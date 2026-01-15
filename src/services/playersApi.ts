@@ -72,5 +72,16 @@ export const playersApi = {
       throw new Error(handleApiError(error))
     }
   },
+
+  /**
+   * Delete player by ID
+   */
+  deletePlayer: async (playerId: string): Promise<void> => {
+    try {
+      await api.delete(`/admin/players/${playerId}`)
+    } catch (error) {
+      throw new Error(handleApiError(error))
+    }
+  },
 }
 

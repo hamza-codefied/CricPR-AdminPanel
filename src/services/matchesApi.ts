@@ -153,7 +153,7 @@ export const matchesApi = {
       )
       return response.data
     } catch (error) {
-      throw new Error(handleApiError(error))
+      throw new Error(handleApiError(error));
     }
   },
 
@@ -166,6 +166,17 @@ export const matchesApi = {
         `/admin/matchDetails/${matchId}`
       )
       return response.data
+    } catch (error) {
+      throw new Error(handleApiError(error))
+    }
+  },
+
+  /**
+   * Delete match by ID
+   */
+  deleteMatch: async (matchId: string): Promise<void> => {
+    try {
+      await api.delete(`/admin/matches/${matchId}`)
     } catch (error) {
       throw new Error(handleApiError(error))
     }

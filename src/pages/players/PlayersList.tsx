@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Eye, /* Trash2, */ ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { PageHeader } from '../../components/common/PageHeader'
 import { Badge } from '../../components/ui/badge'
@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Download } from 'lucide-react'
 import { exportTableToCSV } from '../../utils/csv'
 import { usePlayers } from '../../hooks/usePlayers'
+import { playersApi } from '../../services/playersApi'
 import type { Player } from '../../services/playersApi'
 
 // Filter options based on API requirements
@@ -99,7 +100,7 @@ export function PlayersList() {
   }, [currentPage, limit, filters])
 
   // Fetch players data
-  const { playersData, isLoading } = usePlayers(playersParams)
+  const { playersData, isLoading, refetch } = usePlayers(playersParams)
 
   // Get unique cities from API response
   const cities = useMemo(() => {
@@ -110,21 +111,32 @@ export function PlayersList() {
     return uniqueCities.map((city) => ({ value: city, label: city }))
   }, [playersData])
 
-  const handleDelete = (player: Player) => {
-    setSelectedPlayer(player)
-    setDeleteDialogOpen(true)
-  }
+  // const handleDelete = (player: Player) => {
+  //   setSelectedPlayer(player)
+  //   setDeleteDialogOpen(true)
+  // }
 
-  const confirmDelete = () => {
-    // TODO: Implement actual delete API call
-    addToast({
-      title: 'Success',
-      description: 'Player deleted successfully',
-      variant: 'success',
-    })
-    setSelectedPlayer(null)
-    // Refetch data after delete
-    // You can add refetch here when delete API is ready
+  const confirmDelete = async () => {
+    if (!selectedPlayer) return
+
+    try {
+      await playersApi.deletePlayer(selectedPlayer.playerId)
+      addToast({
+        title: 'Success',
+        description: 'Player deleted successfully',
+        variant: 'success',
+      })
+      setSelectedPlayer(null)
+      setDeleteDialogOpen(false)
+      // Refetch data after delete
+      refetch()
+    } catch (error) {
+      addToast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete player',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleResetFilters = () => {
@@ -320,13 +332,13 @@ export function PlayersList() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
+                          {/* <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDelete(player)}
                           >
                             <Trash2 className="h-4 w-4 text-red" />
-                          </Button>
+                          </Button> */}
                         </div>
                       </TableCell>
                     </TableRow>

@@ -36,7 +36,10 @@ export function useAuth() {
 
   // Logout mutation
   const logoutMutation = useMutation({
-    mutationFn: () => authApi.logout(),
+    mutationFn: () => {
+      const refreshToken = useAuthStore.getState().refreshToken
+      return authApi.logout(refreshToken || '')
+    },
     onSuccess: () => {
       storeLogout()
       navigate('/login')

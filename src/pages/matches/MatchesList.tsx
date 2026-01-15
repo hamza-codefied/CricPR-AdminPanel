@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Download } from 'lucide-react'
 import { exportTableToCSV } from '../../utils/csv'
 import { useMatches } from '../../hooks/useMatches'
+import { matchesApi } from '../../services/matchesApi'
 import type { Match } from '../../services/matchesApi'
 import { format } from 'date-fns'
 
@@ -65,23 +66,34 @@ export function MatchesList() {
   }, [currentPage, limit, filters])
 
   // Fetch matches data
-  const { matchesData, isLoading } = useMatches(matchesParams)
+  const { matchesData, isLoading, refetch } = useMatches(matchesParams)
 
   const handleDelete = (match: Match) => {
     setSelectedMatch(match)
     setDeleteDialogOpen(true)
   }
 
-  const confirmDelete = () => {
-    // TODO: Implement actual delete API call
-    addToast({
-      title: 'Success',
-      description: 'Match deleted successfully',
-      variant: 'success',
-    })
-    setSelectedMatch(null)
-    // Refetch data after delete
-    // You can add refetch here when delete API is ready
+  const confirmDelete = async () => {
+    if (!selectedMatch) return
+
+    try {
+      await matchesApi.deleteMatch(selectedMatch.id)
+      addToast({
+        title: 'Success',
+        description: 'Match deleted successfully',
+        variant: 'success',
+      })
+      setSelectedMatch(null)
+      setDeleteDialogOpen(false)
+      // Refetch data after delete
+      refetch()
+    } catch (error) {
+      addToast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete match',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleResetFilters = () => {

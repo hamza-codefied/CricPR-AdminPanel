@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Download } from 'lucide-react'
 import { exportTableToCSV } from '../../utils/csv'
 import { useTeams } from '../../hooks/useTeams'
+import { teamsApi } from '../../services/teamsApi'
 import type { Team } from '../../services/teamsApi'
 
 // Sort options
@@ -70,7 +71,7 @@ export function TeamsList() {
   }, [currentPage, limit, filters])
 
   // Fetch teams data
-  const { teamsData, isLoading } = useTeams(teamsParams)
+  const { teamsData, isLoading, refetch } = useTeams(teamsParams)
 
   // Get unique cities from API response
   const cities = useMemo(() => {
@@ -86,16 +87,27 @@ export function TeamsList() {
     setDeleteDialogOpen(true)
   }
 
-  const confirmDelete = () => {
-    // TODO: Implement actual delete API call
-    addToast({
-      title: 'Success',
-      description: 'Team deleted successfully',
-      variant: 'success',
-    })
-    setSelectedTeam(null)
-    // Refetch data after delete
-    // You can add refetch here when delete API is ready
+  const confirmDelete = async () => {
+    if (!selectedTeam) return
+
+    try {
+      await teamsApi.deleteTeam(selectedTeam.teamId)
+      addToast({
+        title: 'Success',
+        description: 'Team deleted successfully',
+        variant: 'success',
+      })
+      setSelectedTeam(null)
+      setDeleteDialogOpen(false)
+      // Refetch data after delete
+      refetch()
+    } catch (error) {
+      addToast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete team',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleResetFilters = () => {

@@ -1,18 +1,21 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Send } from 'lucide-react'
+import { Send, ChevronLeft, ChevronRight, X, Users } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Select } from '../../components/ui/select'
 import { PageHeader } from '../../components/common/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
-import { DataTable } from '../../components/common/DataTable'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Badge } from '../../components/ui/badge'
 import { useToast } from '../../components/ui/toast'
-import { mockNotifications } from '../../services/mockData'
+import { useNotifications } from '../../hooks/useNotifications'
+import { PlayerSelectionDialog } from '../../components/common/PlayerSelectionDialog'
+import { notificationsApi, type SendNotificationPayload } from '../../services/notificationsApi'
+import { usePlayers } from '../../hooks/usePlayers'
 import { format } from 'date-fns'
 
 const notificationSchema = z.object({
@@ -26,14 +29,27 @@ type NotificationFormData = z.infer<typeof notificationSchema>
 
 export function Notifications() {
   const { addToast } = useToast()
-  const [notifications, setNotifications] = useState(mockNotifications)
   const [isLoading, setIsLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([])
+  const [playerDialogOpen, setPlayerDialogOpen] = useState(false)
+  const limit = 10
+
+  // Prepare API params
+  const notificationsParams = useMemo(() => ({
+    page: currentPage,
+    limit: limit,
+  }), [currentPage, limit])
+
+  // Fetch notifications data
+  const { notificationsData, isLoading: isLoadingNotifications, refetch: refetchNotifications } = useNotifications(notificationsParams)
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<NotificationFormData>({
     resolver: zodResolver(notificationSchema),
     defaultValues: {
@@ -41,33 +57,65 @@ export function Notifications() {
     },
   })
 
+  const targetValue = watch('target')
+
+  // Clear selected players when target changes to "all"
+  useEffect(() => {
+    if (targetValue === 'all') {
+      setSelectedPlayerIds([])
+    }
+  }, [targetValue])
+
+  // Fetch player details for selected players to display names
+  // We fetch a large page to get all players and filter client-side
+  const selectedPlayersParams = useMemo(() => {
+    if (selectedPlayerIds.length === 0) return { page: 1, limit: 1 }
+    return { page: 1, limit: 1000 }
+  }, [selectedPlayerIds.length])
+
+  // Only fetch if we have selected players
+  const { playersData: allPlayersData } = usePlayers(
+    selectedPlayerIds.length > 0 ? selectedPlayersParams : { page: 1, limit: 1 }
+  )
+
+  // Get selected player names
+  const selectedPlayers = useMemo(() => {
+    if (!allPlayersData?.results || selectedPlayerIds.length === 0) return []
+    return allPlayersData.results.filter((p) => selectedPlayerIds.includes(p.playerId))
+  }, [allPlayersData, selectedPlayerIds])
+
   const onSubmit = async (data: NotificationFormData) => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      const newNotification = {
-        id: String(notifications.length + 1),
+      // Prepare payload
+      const payload: SendNotificationPayload = {
         title: data.title,
-        message: data.message,
-        imageUrl: data.imageUrl || '',
-        sentAt: new Date().toISOString(),
-        status: 'sent',
-        totalReceivers: data.target === 'all' ? 5000 : 100,
+        body: data.message,
+        action: 'NONE',
+        metadata: {},
+        userIds: data.target === 'selected' ? selectedPlayerIds : [],
       }
-      
-      setNotifications([newNotification, ...notifications])
+
+      // Add optional metadata if imageUrl is provided
+      if (data.imageUrl) {
+        payload.metadata = { imageUrl: data.imageUrl }
+      }
+
+      await notificationsApi.sendNotification(payload)
+
       addToast({
         title: 'Success',
         description: 'Notification sent successfully',
         variant: 'success',
       })
       reset()
+      setSelectedPlayerIds([])
+      // Refetch notifications after sending
+      refetchNotifications()
     } catch (error) {
       addToast({
         title: 'Error',
-        description: 'Failed to send notification',
+        description: error instanceof Error ? error.message : 'Failed to send notification',
         variant: 'destructive',
       })
     } finally {
@@ -75,25 +123,11 @@ export function Notifications() {
     }
   }
 
-  const columns = [
-    { key: 'title', header: 'Title' },
-    { key: 'message', header: 'Message' },
-    {
-      key: 'sentAt',
-      header: 'Sent At',
-      render: (row: any) => format(new Date(row.sentAt), 'MMM dd, yyyy HH:mm'),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (row: any) => (
-        <Badge variant={row.status === 'sent' ? 'success' : 'secondary'}>
-          {row.status}
-        </Badge>
-      ),
-    },
-    { key: 'totalReceivers', header: 'Receivers' },
-  ]
+  const handleRemovePlayer = (playerId: string) => {
+    setSelectedPlayerIds((prev) => prev.filter((id) => id !== playerId))
+  }
+
+  const notifications = notificationsData?.results || []
 
   return (
     <div className="space-y-6">
@@ -145,7 +179,52 @@ export function Notifications() {
                   <option value="selected">Selected Users</option>
                 </Select>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
+
+              {/* Select Players Button - shown when "Selected Users" is selected */}
+              {targetValue === 'selected' && (
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setPlayerDialogOpen(true)}
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Select Players
+                  </Button>
+
+                  {/* Selected Players List */}
+                  {selectedPlayers.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Selected Players ({selectedPlayers.length})</Label>
+                      <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-muted/30 max-h-32 overflow-y-auto">
+                        {selectedPlayers.map((player) => (
+                          <Badge
+                            key={player.playerId}
+                            variant="secondary"
+                            className="flex items-center gap-1 pr-1"
+                          >
+                            {player.name}
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePlayer(player.playerId)}
+                              className="ml-1 rounded-full hover:bg-muted"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || (targetValue === 'selected' && selectedPlayerIds.length === 0)}
+              >
                 <Send className="mr-2 h-4 w-4" />
                 {isLoading ? 'Sending...' : 'Send Notification'}
               </Button>
@@ -158,15 +237,112 @@ export function Notifications() {
             <CardTitle>Notification History</CardTitle>
           </CardHeader>
           <CardContent>
-            <DataTable
-              data={notifications}
-              columns={columns}
-              searchKey="title"
-              exportFilename="notification-logs"
-            />
+            {isLoadingNotifications ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-muted-foreground">Loading notifications...</div>
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-muted-foreground">No notifications found</div>
+              </div>
+            ) : (
+              <>
+                <div className="rounded-xl border-2 border-borderShadcn/50 overflow-hidden shadow-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Body</TableHead>
+                        <TableHead>Sent At</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {notifications.map((notification, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{notification.title}</TableCell>
+                          <TableCell>{notification.body}</TableCell>
+                          <TableCell>
+                            {format(new Date(notification.sendAt), 'MMM dd, yyyy HH:mm')}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination */}
+                {notificationsData && notificationsData.totalPages > 1 && (
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-borderShadcn/50 mt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing page {notificationsData.page} of {notificationsData.totalPages} (
+                      {notificationsData.totalResults} total results)
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1 || isLoadingNotifications}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        {Array.from(
+                          { length: Math.min(5, notificationsData.totalPages) },
+                          (_, i) => {
+                            let pageNum
+                            if (notificationsData.totalPages <= 5) {
+                              pageNum = i + 1
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1
+                            } else if (currentPage >= notificationsData.totalPages - 2) {
+                              pageNum = notificationsData.totalPages - 4 + i
+                            } else {
+                              pageNum = currentPage - 2 + i
+                            }
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                disabled={isLoadingNotifications}
+                                className="min-w-[40px]"
+                              >
+                                {pageNum}
+                              </Button>
+                            )
+                          }
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.min(notificationsData.totalPages, prev + 1))
+                        }
+                        disabled={currentPage === notificationsData.totalPages || isLoadingNotifications}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Player Selection Dialog */}
+      <PlayerSelectionDialog
+        open={playerDialogOpen}
+        onOpenChange={setPlayerDialogOpen}
+        selectedPlayerIds={selectedPlayerIds}
+        onSelect={setSelectedPlayerIds}
+      />
     </div>
   )
 }
