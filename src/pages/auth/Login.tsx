@@ -37,11 +37,24 @@ export function Login() {
   // Use dark logo for dark mode, regular logo for light mode
   const logoSrc = theme === 'dark' ? '/logo_dark.png' : logo;
 
+  // Redirect if already authenticated (only on mount, not after login)
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/dashboard");
-    }
-  }, [isAuthenticated, navigate]);
+    const checkAuth = () => {
+      const { isAuthenticated: auth, token, tokenExpiry } = useAuthStore.getState();
+      if (auth && token && tokenExpiry) {
+        try {
+          const expiryDate = new Date(tokenExpiry);
+          const now = new Date();
+          if (expiryDate > now) {
+            navigate("/dashboard", { replace: true });
+          }
+        } catch {
+          // Invalid expiry date, stay on login page
+        }
+      }
+    };
+    checkAuth();
+  }, []); // Only run on mount
 
   useEffect(() => {
     // Initialize theme
@@ -82,7 +95,8 @@ export function Login() {
         description: "Logged in successfully",
         variant: "success",
       });
-      navigate("/dashboard");
+      // Navigate after login - the store is already updated by loginAsync
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
       addToast({
         title: "Error",

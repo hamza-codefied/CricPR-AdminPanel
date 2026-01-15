@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom'
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useAuthStore } from '../store/useAuthStore'
 
 interface ProtectedRouteProps {
@@ -7,27 +7,22 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, checkTokenValidity, token, tokenExpiry } = useAuthStore()
-
-  // Check token validity on mount
-  useEffect(() => {
-    if (token && tokenExpiry) {
-      const isValid = checkTokenValidity()
-      if (!isValid) {
-        // Token expired, will be handled by store logout
-        return
-      }
-    }
-  }, []) // Only run on mount
+  const { isAuthenticated, token, tokenExpiry } = useAuthStore()
 
   // Check if token is expired
   const isTokenValid = useMemo(() => {
     if (!token || !tokenExpiry) {
       return false
     }
-    const expiryDate = new Date(tokenExpiry)
-    const now = new Date()
-    return expiryDate > now
+    try {
+      const expiryDate = new Date(tokenExpiry)
+      const now = new Date()
+      // Add a small buffer (5 seconds) to account for clock differences
+      return expiryDate.getTime() > (now.getTime() + 5000)
+    } catch (error) {
+      console.error('Error parsing token expiry:', error)
+      return false
+    }
   }, [token, tokenExpiry])
 
   if (!isAuthenticated || !token || !isTokenValid) {
