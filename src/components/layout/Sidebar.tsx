@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -18,7 +18,6 @@ import { cn } from "../../utils/cn";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
 import logo from "../../assets/CircPr-logo.png";
-import { useAuthStore } from "../../store/useAuthStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useAuth } from "../../hooks/useAuth";
 import { ConfirmDeleteDialog } from "../common/ConfirmDeleteDialog";
