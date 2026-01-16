@@ -34,19 +34,41 @@ export function MatchDetail() {
 
   const match = matchData
   // Parse team names from matchTitle (e.g., "Town Titans vs Tiger 1")
-  const [teamA, teamB] = match.matchTitle.split(' vs ')
+  const [teamA, teamB] = match.matchTitle?.split(' vs ') || ['Team A', 'Team B']
   const teamALogoFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(teamA)}&background=0E795D&color=fff&size=128`
   const teamBLogoFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(teamB)}&background=01411C&color=fff&size=128`
   const teamALogo = match.teamALogo || teamALogoFallback
   const teamBLogo = match.teamBLogo || teamBLogoFallback
 
   // Get team data from scorecard - match by team name to ensure correct order
-  const teamAData = match.scorecard.teams.find(t => t.teamName === teamA) || match.scorecard.teams[0]
-  const teamBData = match.scorecard.teams.find(t => t.teamName === teamB) || match.scorecard.teams[1] || match.scorecard.teams[0]
+  // Add fallback values in case scorecard or teams are undefined
+  const scorecardTeams = match.scorecard?.teams || []
+  const teamAData = scorecardTeams.find(t => t.teamName === teamA) || scorecardTeams[0] || {
+    teamName: teamA,
+    battingStats: [],
+    bowlingStats: []
+  }
+  const teamBData = scorecardTeams.find(t => t.teamName === teamB) || scorecardTeams[1] || scorecardTeams[0] || {
+    teamName: teamB,
+    battingStats: [],
+    bowlingStats: []
+  }
   
   // Get team scores from summary - match by team name
-  const teamAScoreData = match.summary.teamScores.find(t => t.teamName === teamA) || match.summary.teamScores[0]
-  const teamBScoreData = match.summary.teamScores.find(t => t.teamName === teamB) || match.summary.teamScores[1] || match.summary.teamScores[0]
+  // Add fallback values in case summary or teamScores are undefined
+  const summaryTeamScores = match.summary?.teamScores || []
+  const teamAScoreData = summaryTeamScores.find(t => t.teamName === teamA) || summaryTeamScores[0] || {
+    teamName: teamA,
+    score: 0,
+    wickets: 0,
+    overs: '0.0'
+  }
+  const teamBScoreData = summaryTeamScores.find(t => t.teamName === teamB) || summaryTeamScores[1] || summaryTeamScores[0] || {
+    teamName: teamB,
+    score: 0,
+    wickets: 0,
+    overs: '0.0'
+  }
 
   return (
     <div className="space-y-6">

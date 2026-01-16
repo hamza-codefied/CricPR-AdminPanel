@@ -27,6 +27,7 @@ import {
 } from "../../../components/ui/avatar";
 import { useTopTalent } from "../../../hooks/useDashboard";
 import { ROLE_MAPPING } from "../constants";
+import type { TopTalentPlayer } from "../../../services/dashboardApi";
 
 interface TopTalentSectionProps {
   initialSkillFilter?: string;
@@ -38,6 +39,8 @@ export function TopTalentSection({ initialSkillFilter = "batsman" }: TopTalentSe
   const [skillFilter, setSkillFilter] = useState(initialSkillFilter);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [allCities, setAllCities] = useState<string[]>([]);
+  const [allPlayers, setAllPlayers] = useState<TopTalentPlayer[]>([]);
 
   // Map skill filter to API role format
   const apiRole = useMemo(() => {
@@ -62,25 +65,58 @@ export function TopTalentSection({ initialSkillFilter = "batsman" }: TopTalentSe
   // Fetch top talent data
   const { topTalentData, isLoading: isLoadingTopTalent } = useTopTalent(topTalentParams);
 
-  // Get unique cities from API response
-  const cities = useMemo(() => {
-    if (!topTalentData?.results) return [];
-    const uniqueCities = Array.from(
-      new Set(topTalentData.results.map((player) => player.city))
-    ).sort();
-    return uniqueCities;
-  }, [topTalentData]);
+  // Reset accumulated data when role changes (not when city filter changes)
+  // This ensures cities remain available even when a city filter is applied
+  useEffect(() => {
+    setAllPlayers([]);
+    setAllCities([]);
+    setCurrentPage(1);
+  }, [apiRole]);
 
-  // Filter players locally by search query
+  // Accumulate all players and cities from API responses
+  useEffect(() => {
+    if (topTalentData?.results) {
+      // Accumulate players
+      setAllPlayers((prev) => {
+        const existingIds = new Set(prev.map((p) => p.playerId));
+        const newPlayers = topTalentData.results.filter(
+          (player) => !existingIds.has(player.playerId)
+        );
+        return [...prev, ...newPlayers];
+      });
+
+      // Always accumulate cities from all responses, regardless of city filter
+      // This ensures we have all cities available in the dropdown even when a filter is applied
+      const citiesFromResponse = topTalentData.results
+        .map((player) => player.city)
+        .filter((city): city is string => Boolean(city));
+      
+      setAllCities((prev) => {
+        const combined = [...prev, ...citiesFromResponse];
+        const unique = Array.from(new Set(combined));
+        return unique.sort();
+      });
+    }
+  }, [topTalentData?.results]);
+
+  // Get unique cities - use accumulated cities instead of just current results
+  const cities = useMemo(() => {
+    return allCities;
+  }, [allCities]);
+
+  // Filter players locally by search query - search through all accumulated players
   const filteredPlayers = useMemo(() => {
-    if (!topTalentData?.results) return [];
-    if (!searchQuery.trim()) return topTalentData.results;
+    // If there's a search query, search through all accumulated players
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      return allPlayers.filter((player) =>
+        player.name.toLowerCase().includes(query)
+      );
+    }
     
-    const query = searchQuery.toLowerCase().trim();
-    return topTalentData.results.filter((player) =>
-      player.name.toLowerCase().includes(query)
-    );
-  }, [topTalentData?.results, searchQuery]);
+    // If no search query, show current page results
+    return topTalentData?.results || [];
+  }, [allPlayers, topTalentData?.results, searchQuery]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -199,7 +235,7 @@ export function TopTalentSection({ initialSkillFilter = "batsman" }: TopTalentSe
                                 <AvatarFallback className="bg-primary text-white">
                                   {player.name
                                     .split(" ")
-                                    .map((n) => n[0])
+                                    .map((n: string) => n[0])
                                     .join("")
                                     .toUpperCase()}
                                 </AvatarFallback>

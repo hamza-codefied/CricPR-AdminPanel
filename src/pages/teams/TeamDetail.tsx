@@ -7,12 +7,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../../components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar'
 import { useTeam } from '../../hooks/useTeam'
+import { useTeams } from '../../hooks/useTeams'
 import { format } from 'date-fns'
+import { useMemo } from 'react'
 
 export function TeamDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { teamData, isLoading, isError } = useTeam(id)
+  
+  // Fetch teams list to get correct wins/losses data
+  const { teamsData } = useTeams({ limit: 1000 }) // Fetch all teams to find the matching one
+  
+  // Find the matching team from teams list to get correct wins/losses
+  const teamFromList = useMemo(() => {
+    if (!teamsData?.results || !id) return null
+    return teamsData.results.find(team => team.teamId === id)
+  }, [teamsData?.results, id])
 
   if (isLoading) {
     return (
@@ -36,6 +47,12 @@ export function TeamDetail() {
   const team = teamData
   const fallbackLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(team.teamName)}&background=0E795D&color=fff&size=256`
   const teamLogo = team.teamLogo || fallbackLogo
+  
+  // Use wins/losses from teams list API if available, otherwise fallback to team detail API
+  const wins = teamFromList?.wins ?? team.wins
+  const losses = teamFromList?.losses ?? team.losses
+  // Recalculate winRate based on correct wins/losses
+  const winRate = wins + losses > 0 ? (wins / (wins + losses)) * 100 : 0
 
   return (
     <div className="space-y-6">
@@ -118,7 +135,7 @@ export function TeamDetail() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">{team.wins}</div>
+            <div className="text-3xl font-bold text-green-600 dark:text-green-400">{wins}</div>
             <p className="text-xs text-muted-foreground mt-1">Victories</p>
           </CardContent>
         </Card>
@@ -133,7 +150,7 @@ export function TeamDetail() {
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-red-600 dark:text-red-400">{team.losses}</div>
+            <div className="text-3xl font-bold text-red-600 dark:text-red-400">{losses}</div>
             <p className="text-xs text-muted-foreground mt-1">Defeats</p>
           </CardContent>
         </Card>
@@ -231,7 +248,7 @@ export function TeamDetail() {
                 <div>
                   <p className="text-xs text-muted-foreground">Win Rate</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {team.winRate.toFixed(1)}%
+                    {winRate.toFixed(1)}%
                   </p>
                 </div>
                 <Trophy className="h-8 w-8 text-green-500/30" />

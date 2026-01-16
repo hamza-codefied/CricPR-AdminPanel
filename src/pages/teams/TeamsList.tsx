@@ -38,7 +38,7 @@ export function TeamsList() {
   const [currentPage, setCurrentPage] = useState(1)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
-  const limit = 20
+  const limit = 10
 
   // Reset to page 1 when filters change
   useEffect(() => {

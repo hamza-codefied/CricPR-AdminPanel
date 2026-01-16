@@ -211,7 +211,7 @@ export function TournamentDetail() {
                           onClick={() => navigate(`/matches/${match.matchId}`)}
                         >
                           <TableCell className="font-medium">
-                            {match.teamA.name} vs {match.teamB.name}
+                            {match.teamA?.name || 'Team A'} vs {match.teamB?.name || 'Team B'}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -231,11 +231,13 @@ export function TournamentDetail() {
                                   : 'secondary'
                               }
                             >
-                              {match.status}
+                              {match.status || 'N/A'}
                             </Badge>
                           </TableCell>
                           <TableCell className="font-medium">
-                            {match.result ? `${match.result.winningTeamName} won by ${match.result.winningTeamScore}/${match.result.winningTeamWickets} vs ${match.result.losingTeamScore}/${match.result.losingTeamWickets}` : 'N/A'}
+                            {match.result && match.result.winningTeamName 
+                              ? `${match.result.winningTeamName} won by ${match.result.winningTeamScore || 0}/${match.result.winningTeamWickets || 0} vs ${match.result.losingTeamScore || 0}/${match.result.losingTeamWickets || 0}` 
+                              : 'N/A'}
                           </TableCell>
                         </TableRow>
                       ))
@@ -279,6 +281,7 @@ export function TournamentDetail() {
                         if (stage.hasGroups && stage.groups && stage.groups.length > 0) {
                           return stage.groups.flatMap((group) =>
                             group.pointsTable
+                              .filter((team) => team.teamId) // Filter out teams with null teamId
                               .sort((a, b) => a.position - b.position)
                               .map((team) => (
                                 <TableRow key={`${stage._id}-${group._id}-${team.id}`} className="hover:bg-primary/5 transition-colors">
@@ -292,10 +295,10 @@ export function TournamentDetail() {
                                   </TableCell>
                                   <TableCell className="font-semibold">
                                     <div className="flex items-center gap-2">
-                                      {team.teamId.logo && (
-                                        <img src={team.teamId.logo} alt={team.teamId.name} className="h-6 w-6 rounded-full" />
+                                      {team.teamId?.logo && (
+                                        <img src={team.teamId.logo} alt={team.teamId?.name || 'Team'} className="h-6 w-6 rounded-full" />
                                       )}
-                                      <span>{team.teamId.name}</span>
+                                      <span>{team.teamId?.name || 'Unknown Team'}</span>
                                       {group.groupName && (
                                         <Badge variant="outline" className="text-xs">
                                           {group.groupName}
@@ -303,21 +306,22 @@ export function TournamentDetail() {
                                       )}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-right">{team.matchesPlayed}</TableCell>
+                                  <TableCell className="text-right">{team.matchesPlayed || 0}</TableCell>
                                   <TableCell className="text-right">
-                                    <span className="font-semibold text-green-600 dark:text-green-400">{team.matchesWon}</span>
+                                    <span className="font-semibold text-green-600 dark:text-green-400">{team.matchesWon || 0}</span>
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    <span className="font-semibold text-red-600 dark:text-red-400">{team.matchesLost}</span>
+                                    <span className="font-semibold text-red-600 dark:text-red-400">{team.matchesLost || 0}</span>
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    <span className="text-lg font-bold text-primary">{team.points}</span>
+                                    <span className="text-lg font-bold text-primary">{team.points || 0}</span>
                                   </TableCell>
                                 </TableRow>
                               ))
                           )
                         } else if (stage.pointsTable && stage.pointsTable.length > 0) {
                           return stage.pointsTable
+                            .filter((team) => team.teamId) // Filter out teams with null teamId
                             .sort((a, b) => a.position - b.position)
                             .map((team) => (
                               <TableRow key={`${stage._id}-${team.id}`} className="hover:bg-primary/5 transition-colors">
@@ -331,21 +335,21 @@ export function TournamentDetail() {
                                 </TableCell>
                                 <TableCell className="font-semibold">
                                   <div className="flex items-center gap-2">
-                                    {team.teamId.logo && (
-                                      <img src={team.teamId.logo} alt={team.teamId.name} className="h-6 w-6 rounded-full" />
+                                    {team.teamId?.logo && (
+                                      <img src={team.teamId.logo} alt={team.teamId?.name || 'Team'} className="h-6 w-6 rounded-full" />
                                     )}
-                                    <span>{team.teamId.name}</span>
+                                    <span>{team.teamId?.name || 'Unknown Team'}</span>
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-right">{team.matchesPlayed}</TableCell>
+                                <TableCell className="text-right">{team.matchesPlayed || 0}</TableCell>
                                 <TableCell className="text-right">
-                                  <span className="font-semibold text-green-600 dark:text-green-400">{team.matchesWon}</span>
+                                  <span className="font-semibold text-green-600 dark:text-green-400">{team.matchesWon || 0}</span>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  <span className="font-semibold text-red-600 dark:text-red-400">{team.matchesLost}</span>
+                                  <span className="font-semibold text-red-600 dark:text-red-400">{team.matchesLost || 0}</span>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  <span className="text-lg font-bold text-primary">{team.points}</span>
+                                  <span className="text-lg font-bold text-primary">{team.points || 0}</span>
                                 </TableCell>
                               </TableRow>
                             ))

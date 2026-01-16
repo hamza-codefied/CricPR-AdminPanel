@@ -7,6 +7,13 @@ export interface User {
   email: string
   role: string
   roles?: UserRole[]
+  gender?: string
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  provider?: string
+  status?: string
+  fcmToken?: string | null
+  profilePhoto?: string | null
 }
 
 export interface AuthData {
@@ -23,6 +30,7 @@ interface AuthState {
   tokenExpiry: string | null
   isAuthenticated: boolean
   setAuthData: (data: AuthData) => void
+  updateUser: (updates: Partial<User>) => void
   logout: () => void
   checkTokenValidity: () => boolean
 }
@@ -89,6 +97,19 @@ export const useAuthStore = create<AuthState>((set, get) => {
       }
       saveAuthToStorage(newState)
       set(newState)
+    },
+    
+    updateUser: (updates: Partial<User>) => {
+      const state = get()
+      if (state.user) {
+        const updatedUser = { ...state.user, ...updates }
+        const newState = {
+          ...state,
+          user: updatedUser,
+        }
+        saveAuthToStorage(newState)
+        set(newState)
+      }
     },
     
     logout: () => {

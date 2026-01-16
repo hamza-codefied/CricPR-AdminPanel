@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -13,6 +12,7 @@ import {
   LogOut,
   Sun,
   Moon,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { Button } from "../ui/button";
@@ -20,7 +20,6 @@ import { Switch } from "../ui/switch";
 import logo from "../../assets/CircPr-logo.png";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useAuth } from "../../hooks/useAuth";
-import { ConfirmDeleteDialog } from "../common/ConfirmDeleteDialog";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -42,16 +41,11 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
   const location = useLocation();
   const { logout } = useAuth();
   const { theme, toggleTheme } = useThemeStore();
-  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   
   // Use dark logo for dark mode, regular logo for light mode
   const logoSrc = theme === 'dark' ? '/logo_dark.png' : logo;
 
   const handleLogout = () => {
-    setLogoutDialogOpen(true);
-  };
-
-  const confirmLogout = () => {
     logout();
     if (isMobile) {
       onToggle();
@@ -74,16 +68,29 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
             />
           </div>
         </Link>
-        {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggle}
-            className="h-8 w-8 flex-shrink-0"
+        <div className="flex items-center gap-2">
+          <Link
+            to="/profile"
+            onClick={isMobile ? onToggle : undefined}
+            className={cn(
+              "p-2 rounded-lg transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
+              location.pathname === "/profile" && "bg-primary/10 text-primary"
+            )}
+            title="Profile"
           >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
+            <UserCircle className="h-5 w-5" />
+          </Link>
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggle}
+              className="h-8 w-8 flex-shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
@@ -196,30 +203,14 @@ export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {
             </div>
           </div>
         )}
-        <ConfirmDeleteDialog
-          open={logoutDialogOpen}
-          onOpenChange={setLogoutDialogOpen}
-          onConfirm={confirmLogout}
-          title="Logout"
-          description="Are you sure you want to logout? You will need to login again to access the admin panel."
-        />
       </>
     );
   }
 
   // Desktop: Always show sidebar
   return (
-    <>
-      <aside className={cn("hidden w-72 transition-all lg:block")}>
-        {sidebarContent}
-      </aside>
-      <ConfirmDeleteDialog
-        open={logoutDialogOpen}
-        onOpenChange={setLogoutDialogOpen}
-        onConfirm={confirmLogout}
-        title="Logout"
-        description="Are you sure you want to logout? You will need to login again to access the admin panel."
-      />
-    </>
+    <aside className={cn("hidden w-72 transition-all lg:block")}>
+      {sidebarContent}
+    </aside>
   );
 }

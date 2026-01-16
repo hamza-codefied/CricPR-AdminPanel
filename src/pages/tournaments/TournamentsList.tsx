@@ -36,7 +36,7 @@ export function TournamentsList() {
   const [currentPage, setCurrentPage] = useState(1)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null)
-  const limit = 20
+  const limit = 10
 
   // Reset to page 1 when filters change
   useEffect(() => {

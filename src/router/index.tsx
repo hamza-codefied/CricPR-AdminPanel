@@ -13,6 +13,7 @@ import { TournamentDetail } from '../pages/tournaments/TournamentDetail'
 import { Stats } from '../pages/stats/Stats'
 import { Notifications } from '../pages/notifications/Notifications'
 import { Settings } from '../pages/settings/Settings'
+import { Profile } from '../pages/profile/Profile'
 import { ProtectedRoute } from './ProtectedRoute'
 
 export const router = createBrowserRouter([
@@ -79,6 +80,10 @@ export const router = createBrowserRouter([
       {
         path: 'settings',
         element: <Settings />,
+      },
+      {
+        path: 'profile',
+        element: <Profile />,
       },
     ],
   },

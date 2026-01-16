@@ -136,13 +136,13 @@ export function Notifications() {
         description="Send notifications to app users"
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+        <Card className="flex flex-col">
+          <CardHeader className="flex-shrink-0">
             <CardTitle>Send Notification</CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <CardContent className="flex-1 flex flex-col">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 flex-1 flex flex-col">
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
                 <Input id="title" {...register('title')} />
@@ -222,7 +222,7 @@ export function Notifications() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full mt-auto"
                 disabled={isLoading || (targetValue === 'selected' && selectedPlayerIds.length === 0)}
               >
                 <Send className="mr-2 h-4 w-4" />
@@ -232,11 +232,11 @@ export function Notifications() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="flex flex-col">
+          <CardHeader className="flex-shrink-0">
             <CardTitle>Notification History</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex flex-col min-h-0">
             {isLoadingNotifications ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-muted-foreground">Loading notifications...</div>
@@ -246,9 +246,10 @@ export function Notifications() {
                 <div className="text-muted-foreground">No notifications found</div>
               </div>
             ) : (
-              <>
-                <div className="rounded-xl border-2 border-borderShadcn/50 overflow-hidden shadow-lg">
-                  <Table>
+              <div className="flex flex-col flex-1 min-h-0">
+                <div className="rounded-xl border-2 border-borderShadcn/50 overflow-hidden shadow-lg flex-1 flex flex-col min-h-0">
+                  <div className="flex-1 overflow-y-auto max-h-[500px]">
+                    <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Title</TableHead>
@@ -267,12 +268,12 @@ export function Notifications() {
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
-                </div>
+                    </Table>
+                  </div>
 
-                {/* Pagination */}
-                {notificationsData && notificationsData.totalPages > 1 && (
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-borderShadcn/50 mt-4">
+                  {/* Pagination */}
+                  {notificationsData && notificationsData.totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-borderShadcn/50 flex-shrink-0">
                     <div className="text-sm text-muted-foreground">
                       Showing page {notificationsData.page} of {notificationsData.totalPages} (
                       {notificationsData.totalResults} total results)
@@ -329,8 +330,9 @@ export function Notifications() {
                       </Button>
                     </div>
                   </div>
-                )}
-              </>
+                  )}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

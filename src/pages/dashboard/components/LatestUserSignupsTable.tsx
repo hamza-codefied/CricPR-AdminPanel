@@ -60,12 +60,18 @@ export function LatestUserSignupsTable({ data, isLoading }: LatestUserSignupsTab
                     </TableCell>
                   </TableRow>
                 ) : (
-                  data.map((user, index) => (
+                  data.map((user, index) => {
+                    const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0E795D&color=fff&size=128`
+                    const profileImage = user.profileImage && user.profileImage.trim() !== '' 
+                      ? user.profileImage 
+                      : fallbackImage
+                    
+                    return (
                     <TableRow key={`${user.email}-${index}`} className="hover:bg-primary/5 transition-colors">
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
-                            <AvatarImage src={user.profileImage} alt={user.name} />
+                            <AvatarImage src={profileImage} alt={user.name} />
                             <AvatarFallback className="bg-primary text-white text-xs">
                               {user.name
                                 .split(' ')
@@ -90,7 +96,8 @@ export function LatestUserSignupsTable({ data, isLoading }: LatestUserSignupsTab
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
