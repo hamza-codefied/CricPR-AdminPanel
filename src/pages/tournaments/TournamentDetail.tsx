@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trophy, Calendar, Users, Activity, Target, TrendingUp, Award } from 'lucide-react'
+import { ArrowLeft, Trophy, Calendar, Users, Activity, Award } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
@@ -169,7 +169,7 @@ export function TournamentDetail() {
       </div>
 
       <Tabs defaultValue="matches" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-lg">
+        <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-lg">
           <TabsTrigger value="matches" className="data-[state=active]:bg-primary data-[state=active]:text-white">
             <Calendar className="mr-2 h-4 w-4" />
             Matches
@@ -177,10 +177,6 @@ export function TournamentDetail() {
           <TabsTrigger value="points" className="data-[state=active]:bg-primary data-[state=active]:text-white">
             <Trophy className="mr-2 h-4 w-4" />
             Points Table
-          </TabsTrigger>
-          <TabsTrigger value="performers" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-            <Award className="mr-2 h-4 w-4" />
-            Top Performers
           </TabsTrigger>
         </TabsList>
         <TabsContent value="matches" className="space-y-4">
@@ -368,100 +364,6 @@ export function TournamentDetail() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-        <TabsContent value="performers" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="border-2 border-borderShadcn/50 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-green-500/10 to-green-500/5">
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
-                  Top Run Scorers
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="rounded-xl border-2 border-borderShadcn/50 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="font-semibold">Rank</TableHead>
-                        <TableHead className="font-semibold">Player</TableHead>
-                        <TableHead className="font-semibold text-right">Runs</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[
-                        { name: 'Virat Kohli', runs: 2345 },
-                        { name: 'Rohit Sharma', runs: 2890 },
-                        { name: 'MS Dhoni', runs: 2100 },
-                      ].map((player, idx) => (
-                        <TableRow key={player.name} className="hover:bg-primary/5 transition-colors">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
-                              {idx === 1 && <Award className="h-4 w-4 text-gray-400" />}
-                              {idx === 2 && <Award className="h-4 w-4 text-orange-500" />}
-                              <span className="font-bold">{idx + 1}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium">{player.name}</TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-semibold text-green-600 dark:text-green-400">
-                              {player.runs.toLocaleString()}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-2 border-borderShadcn/50 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-red-500/10 to-red-500/5">
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-red-500" />
-                  Top Wicket Takers
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="rounded-xl border-2 border-borderShadcn/50 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="font-semibold">Rank</TableHead>
-                        <TableHead className="font-semibold">Player</TableHead>
-                        <TableHead className="font-semibold text-right">Wickets</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[
-                        { name: 'Jasprit Bumrah', wickets: 89 },
-                        { name: 'Mohammed Shami', wickets: 76 },
-                        { name: 'Ravindra Jadeja', wickets: 67 },
-                      ].map((player, idx) => (
-                        <TableRow key={player.name} className="hover:bg-primary/5 transition-colors">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
-                              {idx === 1 && <Award className="h-4 w-4 text-gray-400" />}
-                              {idx === 2 && <Award className="h-4 w-4 text-orange-500" />}
-                              <span className="font-bold">{idx + 1}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium">{player.name}</TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-semibold text-red-600 dark:text-red-400">
-                              {player.wickets}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
