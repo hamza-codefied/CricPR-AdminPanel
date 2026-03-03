@@ -13,6 +13,7 @@ import {
   Sun,
   Moon,
   UserCircle,
+  UserCog,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { Button } from "../ui/button";
@@ -35,6 +36,7 @@ const menuItems = [
   { path: "/tournaments", label: "Tournaments", icon: Trophy },
   { path: "/stats", label: "Stats", icon: BarChart3 },
   { path: "/notifications", label: "Notifications", icon: Bell },
+  { path: "/add-manager", label: "Add Manager", icon: UserCog },
 ];
 
 export function Sidebar({ isOpen, onToggle, isMobile = false }: SidebarProps) {

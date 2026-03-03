@@ -12,6 +12,7 @@ import { TournamentsList } from '../pages/tournaments/TournamentsList'
 import { TournamentDetail } from '../pages/tournaments/TournamentDetail'
 import { Stats } from '../pages/stats/Stats'
 import { Notifications } from '../pages/notifications/Notifications'
+import { AddManager } from '../pages/add-manager/AddManager'
 import { Settings } from '../pages/settings/Settings'
 import { Profile } from '../pages/profile/Profile'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -76,6 +77,10 @@ export const router = createBrowserRouter([
       {
         path: 'notifications',
         element: <Notifications />,
+      },
+      {
+        path: 'add-manager',
+        element: <AddManager />,
       },
       {
         path: 'settings',
